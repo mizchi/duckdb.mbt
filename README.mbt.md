@@ -68,6 +68,7 @@ brew install duckdb
 wget https://github.com/duckdb/duckdb/releases/download/<version>/libduckdb-linux-amd64.zip
 unzip libduckdb-linux-amd64.zip
 sudo cp libduckdb.so /usr/local/lib/
+sudo cp duckdb.h /usr/local/include/
 sudo ldconfig
 ```
 
@@ -99,6 +100,13 @@ Ubuntu:
 
 The linker still requires `-lduckdb`, so `libduckdb` must be installed on the
 machine.
+
+To verify the native target, run:
+
+```bash
+moon check --target native
+moon test --target native
+```
 
 #### Troubleshooting Native Link Errors
 
