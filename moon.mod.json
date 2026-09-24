@@ -1,15 +1,15 @@
 {
-  "name": "f4ah6o/duckdb",
-  "version": "0.6.3",
+  "name": "mizchi/duckdb",
+  "version": "0.6.4",
   "deps": {
     "moonbitlang/quickcheck": "0.14.0"
   },
   "readme": "README.mbt.md",
-  "repository": "https://github.com/f4ah6o/duckdb.mbt",
+  "repository": "https://github.com/mizchi/duckdb.mbt",
   "license": "Apache-2.0",
   "keywords": [
     "duckdb"
   ],
-  "description": "",
+  "description": "MoonBit bindings for DuckDB (fork of f4ah6o/duckdb that builds on current MoonBit toolchains)",
   "source": "src"
 }

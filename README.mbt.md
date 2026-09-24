@@ -1,4 +1,6 @@
-# f4ah6o/duckdb
+# mizchi/duckdb
+
+> Fork of [f4ah6o/duckdb](https://github.com/f4ah6o/duckdb.mbt) (Apache-2.0) with the fixes needed to build on current MoonBit toolchains, published as `mizchi/duckdb` until they land upstream ([upstream PR](https://github.com/f4ah6o/duckdb.mbt/pulls)). The API is unchanged; switch the module name back once upstream releases.
 
 MoonBit bindings for DuckDB on native and JavaScript targets.
 
