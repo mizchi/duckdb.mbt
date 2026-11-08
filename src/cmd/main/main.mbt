@@ -6,8 +6,8 @@ fn main {
         conn.query("select 42 as answer", on_done=fn(query_result) {
           match query_result {
             Ok(result) => {
-              println("columns: \{result.columns}")
-              println("rows: \{result.rows}")
+              println("columns: \{@debug.to_string(result.columns)}")
+              println("rows: \{@debug.to_string(result.rows)}")
             }
             Err(@lib.DuckDBError::Message(message)) =>
               println("query failed: \{message}")

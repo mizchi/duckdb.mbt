@@ -1,10 +1,10 @@
 ///|
 #external
-type NativeResult
+priv type NativeResult
 
 ///|
 #external
-type NativeChunk
+priv type NativeChunk
 
 ///|
 #borrow(path)
@@ -63,14 +63,14 @@ extern "C" fn native_appender_begin_row(append : Appender) -> Bool = "duckdb_mb_
 #borrow(append, value)
 extern "C" fn native_appender_append_int(
   append : Appender,
-  value : Int,
+  value : Int32,
 ) -> Bool = "duckdb_mb_append_int"
 
 ///|
 #borrow(append, value)
 extern "C" fn native_appender_append_bigint(
   append : Appender,
-  value : Int,
+  value : Int32,
 ) -> Bool = "duckdb_mb_append_bigint"
 
 ///|
@@ -117,15 +117,15 @@ extern "C" fn native_is_null_appender(append : Appender) -> Bool = "duckdb_mb_is
 #borrow(stmt)
 extern "C" fn native_bind_date(
   stmt : PreparedStatement,
-  index : Int,
-  days : Int,
+  index : Int32,
+  days : Int32,
 ) -> Bool = "duckdb_mb_bind_date"
 
 ///|
 #borrow(stmt)
 extern "C" fn native_bind_timestamp(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   micros : Int64,
 ) -> Bool = "duckdb_mb_bind_timestamp"
 
@@ -133,7 +133,7 @@ extern "C" fn native_bind_timestamp(
 #borrow(append)
 extern "C" fn native_appender_append_date(
   append : Appender,
-  days : Int,
+  days : Int32,
 ) -> Bool = "duckdb_mb_append_date"
 
 ///|
@@ -155,9 +155,9 @@ extern "C" fn native_appender_append_timestamp(
 #borrow(stmt, data)
 extern "C" fn native_bind_blob(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   data : Bytes,
-  length : Int,
+  length : Int32,
 ) -> Bool = "duckdb_mb_bind_blob"
 
 ///|
@@ -165,7 +165,7 @@ extern "C" fn native_bind_blob(
 extern "C" fn native_appender_append_blob(
   append : Appender,
   data : Bytes,
-  length : Int,
+  length : Int32,
 ) -> Bool = "duckdb_mb_append_blob"
 
 // ----------------------------------------------------------------------------
@@ -176,21 +176,21 @@ extern "C" fn native_appender_append_blob(
 #borrow(stmt)
 extern "C" fn native_bind_decimal(
   stmt : PreparedStatement,
-  index : Int,
-  width : Int,
-  scale : Int,
-  lower : Int,
-  upper : Int,
+  index : Int32,
+  width : Int32,
+  scale : Int32,
+  lower : Int32,
+  upper : Int32,
 ) -> Bool = "duckdb_mb_bind_decimal"
 
 ///|
 #borrow(append)
 extern "C" fn native_appender_append_decimal(
   append : Appender,
-  width : Int,
-  scale : Int,
-  lower : Int,
-  upper : Int,
+  width : Int32,
+  scale : Int32,
+  lower : Int32,
+  upper : Int32,
 ) -> Bool = "duckdb_mb_append_decimal"
 
 // ----------------------------------------------------------------------------
@@ -201,9 +201,9 @@ extern "C" fn native_appender_append_decimal(
 #borrow(stmt)
 extern "C" fn native_bind_interval(
   stmt : PreparedStatement,
-  index : Int,
-  months : Int,
-  days : Int,
+  index : Int32,
+  months : Int32,
+  days : Int32,
   micros : Int64,
 ) -> Bool = "duckdb_mb_bind_interval"
 
@@ -211,8 +211,8 @@ extern "C" fn native_bind_interval(
 #borrow(append)
 extern "C" fn native_appender_append_interval(
   append : Appender,
-  months : Int,
-  days : Int,
+  months : Int32,
+  days : Int32,
   micros : Int64,
 ) -> Bool = "duckdb_mb_append_interval"
 
@@ -224,9 +224,9 @@ extern "C" fn native_appender_append_interval(
 #borrow(stmt, values)
 extern "C" fn native_bind_list_varchar(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   values : Array[Bytes],
-  count : Int,
+  count : Int32,
 ) -> Bool = "duckdb_mb_bind_list_varchar"
 
 // ----------------------------------------------------------------------------
@@ -237,10 +237,10 @@ extern "C" fn native_bind_list_varchar(
 #borrow(stmt, field_names, field_values)
 extern "C" fn native_bind_struct_varchar(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   field_names : Array[Bytes],
   field_values : Array[Bytes],
-  field_count : Int,
+  field_count : Int32,
 ) -> Bool = "duckdb_mb_bind_struct_varchar"
 
 // ----------------------------------------------------------------------------
@@ -251,10 +251,10 @@ extern "C" fn native_bind_struct_varchar(
 #borrow(stmt, keys, values)
 extern "C" fn native_bind_map_varchar_varchar(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   keys : Array[Bytes],
   values : Array[Bytes],
-  entry_count : Int,
+  entry_count : Int32,
 ) -> Bool = "duckdb_mb_bind_map_varchar_varchar"
 
 // ----------------------------------------------------------------------------
@@ -266,7 +266,7 @@ extern "C" fn native_bind_map_varchar_varchar(
 extern "C" fn native_appender_append_list_varchar(
   appender : Appender,
   values : Array[Bytes],
-  count : Int,
+  count : Int32,
 ) -> Bool = "duckdb_mb_append_list_varchar"
 
 ///|
@@ -275,7 +275,7 @@ extern "C" fn native_appender_append_struct_varchar(
   appender : Appender,
   field_names : Array[Bytes],
   field_values : Array[Bytes],
-  field_count : Int,
+  field_count : Int32,
 ) -> Bool = "duckdb_mb_append_struct_varchar"
 
 ///|
@@ -284,7 +284,7 @@ extern "C" fn native_appender_append_map_varchar_varchar(
   appender : Appender,
   keys : Array[Bytes],
   values : Array[Bytes],
-  entry_count : Int,
+  entry_count : Int32,
 ) -> Bool = "duckdb_mb_append_map_varchar_varchar"
 
 ///|
@@ -308,40 +308,40 @@ extern "C" fn native_result_destroy(result : NativeResult) = "duckdb_mb_result_d
 
 ///|
 #borrow(result)
-extern "C" fn native_result_column_count(result : NativeResult) -> Int = "duckdb_mb_result_column_count"
+extern "C" fn native_result_column_count(result : NativeResult) -> Int32 = "duckdb_mb_result_column_count"
 
 ///|
 #borrow(result)
-extern "C" fn native_result_row_count(result : NativeResult) -> Int = "duckdb_mb_result_row_count"
+extern "C" fn native_result_row_count(result : NativeResult) -> Int32 = "duckdb_mb_result_row_count"
 
 ///|
 #borrow(result)
 extern "C" fn native_result_column_name(
   result : NativeResult,
-  col : Int,
+  col : Int32,
 ) -> Bytes = "duckdb_mb_result_column_name"
 
 ///|
 #borrow(result)
 extern "C" fn native_result_column_type(
   result : NativeResult,
-  col : Int,
-) -> Int = "duckdb_mb_result_column_type"
+  col : Int32,
+) -> Int32 = "duckdb_mb_result_column_type"
 
 ///|
 #borrow(result)
 extern "C" fn native_result_is_null(
   result : NativeResult,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bool = "duckdb_mb_result_is_null"
 
 ///|
 #borrow(result)
 extern "C" fn native_result_value(
   result : NativeResult,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bytes = "duckdb_mb_result_value"
 
 ///|
@@ -350,13 +350,13 @@ extern "C" fn native_stream_destroy(stream : ResultStream) = "duckdb_mb_stream_d
 
 ///|
 #borrow(stream)
-extern "C" fn native_stream_column_count(stream : ResultStream) -> Int = "duckdb_mb_stream_column_count"
+extern "C" fn native_stream_column_count(stream : ResultStream) -> Int32 = "duckdb_mb_stream_column_count"
 
 ///|
 #borrow(stream, col)
 extern "C" fn native_stream_column_name(
   stream : ResultStream,
-  col : Int,
+  col : Int32,
 ) -> Bytes = "duckdb_mb_stream_column_name"
 
 ///|
@@ -369,26 +369,26 @@ extern "C" fn native_chunk_destroy(chunk : NativeChunk) = "duckdb_mb_chunk_destr
 
 ///|
 #borrow(chunk)
-extern "C" fn native_chunk_row_count(chunk : NativeChunk) -> Int = "duckdb_mb_chunk_row_count"
+extern "C" fn native_chunk_row_count(chunk : NativeChunk) -> Int32 = "duckdb_mb_chunk_row_count"
 
 ///|
 #borrow(chunk)
-extern "C" fn native_chunk_column_count(chunk : NativeChunk) -> Int = "duckdb_mb_chunk_column_count"
+extern "C" fn native_chunk_column_count(chunk : NativeChunk) -> Int32 = "duckdb_mb_chunk_column_count"
 
 ///|
 #borrow(chunk, col, row)
 extern "C" fn native_chunk_is_null(
   chunk : NativeChunk,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bool = "duckdb_mb_chunk_is_null"
 
 ///|
 #borrow(chunk, col, row)
 extern "C" fn native_chunk_value(
   chunk : NativeChunk,
-  col : Int,
-  row : Int,
+  col : Int32,
+  row : Int32,
 ) -> Bytes = "duckdb_mb_chunk_value"
 
 ///|
@@ -412,7 +412,7 @@ extern "C" fn native_is_null_chunk(chunk : NativeChunk) -> Bool = "duckdb_mb_is_
 
 ///|
 fn bytes_to_string(bytes : Bytes) -> String {
-  @encoding/utf8.decode_lossy(bytes)
+  @utf8.decode_lossy(bytes)
 }
 
 ///|
@@ -428,11 +428,11 @@ fn last_error(fallback : String) -> String {
 ///|
 pub fn connect(
   on_ready~ : (Result[Connection, DuckDBError]) -> Unit,
-  path? : String = ":memory:",
-  backend? : JsBackend = JsBackend::Auto,
+  path~ : String = ":memory:",
+  backend~ : JsBackend = JsBackend::Auto,
 ) -> Unit {
   touch_public_types(backend)
-  let path_bytes = @encoding/utf8.encode(path)
+  let path_bytes = @utf8.encode(path)
   let conn = native_connect(path_bytes)
   if native_is_null_conn(conn) {
     on_ready(Err(DuckDBError::Message(last_error("duckdb_open failed"))))
@@ -456,7 +456,7 @@ pub fn Connection::query(
   sql : String,
   on_done~ : (Result[QueryResult, DuckDBError]) -> Unit,
 ) -> Unit {
-  let result = native_query(self, @encoding/utf8.encode(sql))
+  let result = native_query(self, @utf8.encode(sql))
   if native_is_null_result(result) {
     on_done(Err(DuckDBError::Message(last_error("duckdb_query failed"))))
   } else {
@@ -496,7 +496,7 @@ pub fn Connection::query(
       ()
     }
     native_result_destroy(result)
-    on_done(Ok({ columns, column_types, rows, nulls }))
+    on_done(Ok({ columns, column_types, rows, nulls, }))
   }
 }
 
@@ -506,7 +506,7 @@ pub fn Connection::query_stream(
   sql : String,
   on_done~ : (Result[ResultStream, DuckDBError]) -> Unit,
 ) -> Unit {
-  let stream = native_query_stream(self, @encoding/utf8.encode(sql))
+  let stream = native_query_stream(self, @utf8.encode(sql))
   if native_is_null_stream(stream) {
     on_done(Err(DuckDBError::Message(last_error("duckdb_stream failed"))))
   } else {
@@ -515,7 +515,7 @@ pub fn Connection::query_stream(
 }
 
 ///|
-pub fn ResultStream::column_count(self : ResultStream) -> Int {
+pub fn ResultStream::column_count(self : ResultStream) -> Int32 {
   native_stream_column_count(self)
 }
 
@@ -576,7 +576,7 @@ pub fn ResultStream::next(
         ()
       }
       native_chunk_destroy(chunk)
-      on_done(Ok(Some({ columns, rows, nulls })))
+      on_done(Ok(Some({ columns, rows, nulls, })))
     }
   }
 }
@@ -615,11 +615,7 @@ pub fn Config::set(
   key : String,
   value : String,
 ) -> Result[Unit, DuckDBError] {
-  if native_config_set(
-      self,
-      @encoding/utf8.encode(key),
-      @encoding/utf8.encode(value),
-    ) {
+  if native_config_set(self, @utf8.encode(key), @utf8.encode(value)) {
     Ok(())
   } else {
     Err(DuckDBError::Message(config_error(self, "config_set failed")))
@@ -630,13 +626,13 @@ pub fn Config::set(
 pub fn connect_with_config(
   on_ready~ : (Result[Connection, DuckDBError]) -> Unit,
   config : Config?,
-  path? : String = ":memory:",
-  backend? : JsBackend = JsBackend::Auto,
+  path~ : String = ":memory:",
+  backend~ : JsBackend = JsBackend::Auto,
 ) -> Unit {
   touch_public_types(backend)
   match config {
     Some(cfg) => {
-      let path_bytes = @encoding/utf8.encode(path)
+      let path_bytes = @utf8.encode(path)
       let conn = native_connect_with_config(path_bytes, cfg)
       native_config_destroy(cfg)
       if native_is_null_conn(conn) {
@@ -650,7 +646,7 @@ pub fn connect_with_config(
       }
     }
     None => {
-      let path_bytes = @encoding/utf8.encode(path)
+      let path_bytes = @utf8.encode(path)
       let conn = native_connect(path_bytes)
       if native_is_null_conn(conn) {
         on_ready(Err(DuckDBError::Message(last_error("duckdb_open failed"))))
@@ -684,23 +680,23 @@ extern "C" fn native_statement_error(stmt : PreparedStatement) -> Bytes = "duckd
 #borrow(stmt)
 extern "C" fn native_bind_int(
   stmt : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Bool = "duckdb_mb_bind_int"
 
 ///|
 #borrow(stmt)
 extern "C" fn native_bind_bigint(
   stmt : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Bool = "duckdb_mb_bind_bigint"
 
 ///|
 #borrow(stmt)
 extern "C" fn native_bind_double(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Double,
 ) -> Bool = "duckdb_mb_bind_double"
 
@@ -708,7 +704,7 @@ extern "C" fn native_bind_double(
 #borrow(stmt, val)
 extern "C" fn native_bind_varchar(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   val : Bytes,
 ) -> Bool = "duckdb_mb_bind_varchar"
 
@@ -716,13 +712,13 @@ extern "C" fn native_bind_varchar(
 #borrow(stmt)
 extern "C" fn native_bind_bool(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bool,
 ) -> Bool = "duckdb_mb_bind_bool"
 
 ///|
 #borrow(stmt)
-extern "C" fn native_bind_null(stmt : PreparedStatement, index : Int) -> Bool = "duckdb_mb_bind_null"
+extern "C" fn native_bind_null(stmt : PreparedStatement, index : Int32) -> Bool = "duckdb_mb_bind_null"
 
 ///|
 #borrow(stmt)
@@ -762,7 +758,7 @@ pub fn Connection::prepare(
   sql : String,
   on_done~ : (Result[PreparedStatement, DuckDBError]) -> Unit,
 ) -> Unit {
-  let stmt = native_prepare(self, @encoding/utf8.encode(sql))
+  let stmt = native_prepare(self, @utf8.encode(sql))
   if native_is_null_statement(stmt) {
     on_done(
       Err(DuckDBError::Message(statement_error(stmt, "duckdb_prepare failed"))),
@@ -775,8 +771,8 @@ pub fn Connection::prepare(
 ///|
 pub fn PreparedStatement::bind_int(
   self : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_int(self, index, value) {
     Ok(())
@@ -788,8 +784,8 @@ pub fn PreparedStatement::bind_int(
 ///|
 pub fn PreparedStatement::bind_bigint(
   self : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_bigint(self, index, value) {
     Ok(())
@@ -801,7 +797,7 @@ pub fn PreparedStatement::bind_bigint(
 ///|
 pub fn PreparedStatement::bind_double(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Double,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_double(self, index, value) {
@@ -814,10 +810,10 @@ pub fn PreparedStatement::bind_double(
 ///|
 pub fn PreparedStatement::bind_varchar(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : String,
 ) -> Result[Unit, DuckDBError] {
-  if native_bind_varchar(self, index, @encoding/utf8.encode(value)) {
+  if native_bind_varchar(self, index, @utf8.encode(value)) {
     Ok(())
   } else {
     Err(DuckDBError::Message(statement_error(self, "bind_varchar failed")))
@@ -827,7 +823,7 @@ pub fn PreparedStatement::bind_varchar(
 ///|
 pub fn PreparedStatement::bind_bool(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bool,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_bool(self, index, value) {
@@ -840,7 +836,7 @@ pub fn PreparedStatement::bind_bool(
 ///|
 pub fn PreparedStatement::bind_null(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_null(self, index) {
     Ok(())
@@ -909,7 +905,7 @@ pub fn PreparedStatement::execute(
       ()
     }
     native_result_destroy(result)
-    on_done(Ok({ columns, column_types, rows, nulls }))
+    on_done(Ok({ columns, column_types, rows, nulls, }))
   }
 }
 
@@ -960,8 +956,8 @@ pub fn Connection::create_appender(
 ) -> Unit {
   let append = native_appender_create(
     self,
-    @encoding/utf8.encode(schema),
-    @encoding/utf8.encode(table),
+    @utf8.encode(schema),
+    @utf8.encode(table),
   )
   if native_is_null_appender(append) {
     on_done(Err(DuckDBError::Message("create_appender failed")))
@@ -982,7 +978,7 @@ pub fn Appender::begin_row(self : Appender) -> Result[Unit, DuckDBError] {
 ///|
 pub fn Appender::append_int(
   self : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   if native_appender_append_int(self, value) {
     Ok(())
@@ -994,7 +990,7 @@ pub fn Appender::append_int(
 ///|
 pub fn Appender::append_bigint(
   self : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   if native_appender_append_bigint(self, value) {
     Ok(())
@@ -1020,7 +1016,7 @@ pub fn Appender::append_varchar(
   self : Appender,
   value : String,
 ) -> Result[Unit, DuckDBError] {
-  if native_appender_append_varchar(self, @encoding/utf8.encode(value)) {
+  if native_appender_append_varchar(self, @utf8.encode(value)) {
     Ok(())
   } else {
     Err(DuckDBError::Message(appender_error(self, "append_varchar failed")))
@@ -1082,8 +1078,8 @@ pub fn Appender::close(
 ///|
 pub fn PreparedStatement::bind_date(
   self : PreparedStatement,
-  index : Int,
-  days : Int,
+  index : Int32,
+  days : Int32,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_date(self, index, days) {
     Ok(())
@@ -1095,7 +1091,7 @@ pub fn PreparedStatement::bind_date(
 ///|
 pub fn PreparedStatement::bind_timestamp(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   micros : Int64,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_timestamp(self, index, micros) {
@@ -1108,7 +1104,7 @@ pub fn PreparedStatement::bind_timestamp(
 ///|
 pub fn Appender::append_date(
   self : Appender,
-  days : Int,
+  days : Int32,
 ) -> Result[Unit, DuckDBError] {
   if native_appender_append_date(self, days) {
     Ok(())
@@ -1131,13 +1127,13 @@ pub fn Appender::append_timestamp(
 
 ///|
 /// Check if a year is a leap year in the Gregorian calendar.
-fn _is_leap_year(year : Int) -> Bool {
+fn _is_leap_year(year : Int32) -> Bool {
   (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
 
 ///|
 /// Get the number of days in each month (for non-leap years).
-fn _days_in_month(m : Int) -> Int {
+fn _days_in_month(m : Int32) -> Int32 {
   match m {
     1 => 31
     2 => 28
@@ -1157,7 +1153,7 @@ fn _days_in_month(m : Int) -> Int {
 
 ///|
 /// Cumulative days before each month (for non-leap years).
-fn days_before_month(m : Int) -> Int {
+fn days_before_month(m : Int32) -> Int32 {
   match m {
     1 => 0
     2 => 31
@@ -1177,7 +1173,7 @@ fn days_before_month(m : Int) -> Int {
 
 ///|
 /// Count leap years between year 1 and the given year (exclusive).
-fn count_leap_years_before(year : Int) -> Int {
+fn count_leap_years_before(year : Int32) -> Int32 {
   let y = year - 1
   y / 4 - y / 100 + y / 400
 }
@@ -1185,7 +1181,7 @@ fn count_leap_years_before(year : Int) -> Int {
 ///|
 /// Convert year, month, day to days since 1970-01-01 (Unix epoch).
 /// Uses accurate Gregorian calendar calculation with leap year support.
-pub fn date_from_ymd(year : Int, month : Int, day : Int) -> Int {
+pub fn date_from_ymd(year : Int32, month : Int32, day : Int32) -> Int32 {
   // Days from 1970 to the beginning of the given year
   let year_delta = year - 1970
   let leap_years = count_leap_years_before(year) - count_leap_years_before(1970)
@@ -1205,7 +1201,7 @@ pub fn date_from_ymd(year : Int, month : Int, day : Int) -> Int {
 ///|
 /// Convert days since 1970-01-01 to year, month, day.
 /// Uses accurate Gregorian calendar calculation with leap year support.
-pub fn date_to_ymd(total_days : Int) -> (Int, Int, Int) {
+pub fn date_to_ymd(total_days : Int32) -> (Int32, Int32, Int32) {
   // Use a simpler algorithm: count years from 1970
   let mut days = total_days
   let mut year = 1970
@@ -1248,12 +1244,12 @@ pub fn date_to_ymd(total_days : Int) -> (Int, Int, Int) {
 /// Convert date components to a timestamp (microseconds since 1970-01-01).
 /// Note: This is a simplified calculation. For production use, use a proper date library.
 pub fn timestamp_from_ymd_hms(
-  year : Int,
-  month : Int,
-  day : Int,
-  hour : Int,
-  minute : Int,
-  second : Int,
+  year : Int32,
+  month : Int32,
+  day : Int32,
+  hour : Int32,
+  minute : Int32,
+  second : Int32,
 ) -> Int64 {
   let date_days = date_from_ymd(year, month, day)
   // Use Int64 to avoid overflow (Int is 32-bit for WASM compatibility)
@@ -1269,7 +1265,9 @@ pub fn timestamp_from_ymd_hms(
 ///|
 /// Convert timestamp (microseconds since 1970-01-01) to date components.
 /// Note: This is a simplified calculation. For production use, use a proper date library.
-pub fn timestamp_to_ymd_hms(micros : Int64) -> (Int, Int, Int, Int, Int, Int) {
+pub fn timestamp_to_ymd_hms(
+  micros : Int64,
+) -> (Int32, Int32, Int32, Int32, Int32, Int32) {
   let total_seconds = micros / 1000000L
   let mut days = total_seconds / 86400L
   let mut seconds_in_day = total_seconds % 86400L
@@ -1298,7 +1296,7 @@ pub fn timestamp_to_ymd_hms(micros : Int64) -> (Int, Int, Int, Int, Int, Int) {
 ///|
 pub fn PreparedStatement::bind_blob(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bytes,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_blob(self, index, value, Bytes::length(value)) {
@@ -1327,7 +1325,7 @@ pub fn Appender::append_blob(
 // Helper function for power of 10
 
 ///|
-fn _int_pow10(exp : Int) -> Int {
+fn _int_pow10(exp : Int32) -> Int32 {
   let mut result = 1
   let mut i = 0
   while i < exp {
@@ -1340,7 +1338,7 @@ fn _int_pow10(exp : Int) -> Int {
 ///|
 pub fn PreparedStatement::bind_decimal(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Decimal,
 ) -> Result[Unit, DuckDBError] {
   // Use 128-bit representation directly from lower/upper parts
@@ -1381,12 +1379,16 @@ pub fn Appender::append_decimal(
 /// Create a decimal from a floating-point value with specified precision.
 /// Note: This is approximate due to floating-point representation.
 /// For values exceeding 64-bit range, use decimal_from_hugeint instead.
-pub fn decimal_from_double(value : Double, width : Int, scale : Int) -> Decimal {
+pub fn decimal_from_double(
+  value : Double,
+  width : Int32,
+  scale : Int32,
+) -> Decimal {
   let multiplier = _int_pow10(scale)
   let scaled = (value * Double::from_int(multiplier)).to_int()
   // For 64-bit range: upper=0 for positive, upper=-1 for negative
   let upper = if scaled >= 0 { 0 } else { -1 }
-  { width, scale, lower: scaled, upper }
+  { width, scale, lower: scaled, upper, }
 }
 
 ///|
@@ -1401,9 +1403,9 @@ pub fn decimal_to_double(decimal : Decimal) -> Double {
 /// Create a decimal from integer parts (64-bit range).
 /// For values exceeding 64-bit range, use decimal_from_hugeint instead.
 pub fn decimal_from_parts(
-  whole : Int,
-  fractional : Int,
-  scale : Int,
+  whole : Int32,
+  fractional : Int32,
+  scale : Int32,
 ) -> Decimal {
   let divisor = _int_pow10(scale)
   let value = if whole < 0 {
@@ -1417,16 +1419,16 @@ pub fn decimal_from_parts(
     String::length(whole.to_string()) + scale
   }
   let upper = if value >= 0 { 0 } else { -1 }
-  { width: width.max(1), scale, lower: value, upper }
+  { width: width.max(1), scale, lower: value, upper, }
 }
 
 ///|
 /// Get the whole and fractional parts of a decimal (64-bit range).
-pub fn decimal_to_parts(decimal : Decimal) -> (Int, Int) {
+pub fn decimal_to_parts(decimal : Decimal) -> (Int32, Int32) {
   let divisor = _int_pow10(decimal.scale)
   let whole = decimal.lower / divisor
   let remainder = decimal.lower % divisor
-  let fractional = if remainder < 0 { Int::abs(remainder) } else { remainder }
+  let fractional = if remainder < 0 { Int32::abs(remainder) } else { remainder }
   (whole, fractional)
 }
 
@@ -1434,12 +1436,12 @@ pub fn decimal_to_parts(decimal : Decimal) -> (Int, Int) {
 /// Create a decimal from 128-bit parts.
 /// Allows specifying the full 128-bit value for maximum precision.
 pub fn decimal_from_hugeint(
-  lower : Int,
-  upper : Int,
-  width : Int,
-  scale : Int,
+  lower : Int32,
+  upper : Int32,
+  width : Int32,
+  scale : Int32,
 ) -> Decimal {
-  { width, scale, lower, upper }
+  { width, scale, lower, upper, }
 }
 
 // ----------------------------------------------------------------------------
@@ -1449,7 +1451,7 @@ pub fn decimal_from_hugeint(
 ///|
 pub fn PreparedStatement::bind_interval(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Interval,
 ) -> Result[Unit, DuckDBError] {
   if native_bind_interval(self, index, value.months, value.days, value.micros) {
@@ -1479,44 +1481,44 @@ pub fn Appender::append_interval(
 ///|
 /// Create an interval from months, days, and microseconds.
 pub fn interval_from_parts(
-  months : Int,
-  days : Int,
+  months : Int32,
+  days : Int32,
   micros : Int64,
 ) -> Interval {
-  { months, days, micros }
+  { months, days, micros, }
 }
 
 ///|
 /// Create an interval from days.
-pub fn interval_from_days(days : Int) -> Interval {
-  { months: 0, days, micros: 0 }
+pub fn interval_from_days(days : Int32) -> Interval {
+  { months: 0, days, micros: 0, }
 }
 
 ///|
 /// Create an interval from hours.
-pub fn interval_from_hours(hours : Int) -> Interval {
+pub fn interval_from_hours(hours : Int32) -> Interval {
   let micros = hours.to_int64() * 3600L * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
 /// Create an interval from minutes.
-pub fn interval_from_minutes(minutes : Int) -> Interval {
+pub fn interval_from_minutes(minutes : Int32) -> Interval {
   let micros = minutes.to_int64() * 60L * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
 /// Create an interval from seconds.
-pub fn interval_from_seconds(seconds : Int) -> Interval {
+pub fn interval_from_seconds(seconds : Int32) -> Interval {
   let micros = seconds.to_int64() * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
 /// Create an interval from months.
-pub fn interval_from_months(months : Int) -> Interval {
-  { months, days: 0, micros: 0 }
+pub fn interval_from_months(months : Int32) -> Interval {
+  { months, days: 0, micros: 0, }
 }
 
 ///|
@@ -1534,10 +1536,10 @@ pub fn interval_to_micros(interval : Interval) -> Int64 {
 ///|
 pub fn PreparedStatement::bind_list_varchar(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   values : Array[String],
 ) -> Result[Unit, DuckDBError] {
-  let encoded = values.map(fn(v) { @encoding/utf8.encode(v) })
+  let encoded = values.map(fn(v) { @utf8.encode(v) })
   if native_bind_list_varchar(self, index, encoded, encoded.length()) {
     Ok(())
   } else {
@@ -1553,13 +1555,13 @@ pub fn list_from_strings(elements : Array[String]) -> List {
 
 ///|
 /// Get list length.
-pub fn list_length(list : List) -> Int {
+pub fn list_length(list : List) -> Int32 {
   list.elements.length()
 }
 
 ///|
 /// Get element at index.
-pub fn list_get(list : List, index : Int) -> String? {
+pub fn list_get(list : List, index : Int32) -> String? {
   if index >= 0 && index < list.elements.length() {
     Some(list.elements[index])
   } else {
@@ -1574,11 +1576,11 @@ pub fn list_get(list : List, index : Int) -> String? {
 ///|
 pub fn PreparedStatement::bind_struct(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Struct,
 ) -> Result[Unit, DuckDBError] {
-  let encoded_names = value.fields.map(fn(f) { @encoding/utf8.encode(f) })
-  let encoded_values = value.values.map(fn(v) { @encoding/utf8.encode(v) })
+  let encoded_names = value.fields.map(fn(f) { @utf8.encode(f) })
+  let encoded_values = value.values.map(fn(v) { @utf8.encode(v) })
   if native_bind_struct_varchar(
       self,
       index,
@@ -1598,7 +1600,7 @@ pub fn struct_from_arrays(
   fields : Array[String],
   values : Array[String],
 ) -> Struct {
-  { fields, values }
+  { fields, values, }
 }
 
 ///|
@@ -1606,13 +1608,13 @@ pub fn struct_from_arrays(
 pub fn struct_from_pairs(pairs : Array[(String, String)]) -> Struct {
   let fields = pairs.map(fn(p) { p.0 })
   let values = pairs.map(fn(p) { p.1 })
-  { fields, values }
+  { fields, values, }
 }
 
 // Helper function to find index in array
 
 ///|
-fn array_index_of(arr : Array[String], val : String) -> Int? {
+fn array_index_of(arr : Array[String], val : String) -> Int32? {
   let mut i = 0
   while i < arr.length() {
     if arr[i] == val {
@@ -1635,7 +1637,7 @@ pub fn struct_get(s : Struct, field_name : String) -> String? {
 
 ///|
 /// Get struct field count.
-pub fn struct_field_count(s : Struct) -> Int {
+pub fn struct_field_count(s : Struct) -> Int32 {
   s.fields.length()
 }
 
@@ -1646,11 +1648,11 @@ pub fn struct_field_count(s : Struct) -> Int {
 ///|
 pub fn PreparedStatement::bind_map(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   map : Map,
 ) -> Result[Unit, DuckDBError] {
-  let encoded_keys = map.keys.map(fn(k) { @encoding/utf8.encode(k) })
-  let encoded_values = map.values.map(fn(v) { @encoding/utf8.encode(v) })
+  let encoded_keys = map.keys.map(fn(k) { @utf8.encode(k) })
+  let encoded_values = map.values.map(fn(v) { @utf8.encode(v) })
   if native_bind_map_varchar_varchar(
       self,
       index,
@@ -1667,7 +1669,7 @@ pub fn PreparedStatement::bind_map(
 ///|
 /// Create a map from key and value arrays.
 pub fn map_from_arrays(keys : Array[String], values : Array[String]) -> Map {
-  { keys, values }
+  { keys, values, }
 }
 
 ///|
@@ -1675,7 +1677,7 @@ pub fn map_from_arrays(keys : Array[String], values : Array[String]) -> Map {
 pub fn map_from_pairs(pairs : Array[(String, String)]) -> Map {
   let keys = pairs.map(fn(p) { p.0 })
   let values = pairs.map(fn(p) { p.1 })
-  { keys, values }
+  { keys, values, }
 }
 
 ///|
@@ -1690,7 +1692,7 @@ pub fn map_get(m : Map, key : String) -> String? {
 
 ///|
 /// Get map size.
-pub fn map_size(map : Map) -> Int {
+pub fn map_size(map : Map) -> Int32 {
   map.keys.length()
 }
 
@@ -1704,7 +1706,7 @@ pub fn Appender::append_list_varchar(
   self : Appender,
   values : Array[String],
 ) -> Result[Unit, DuckDBError] {
-  let encoded = values.map(fn(v) { @encoding/utf8.encode(v) })
+  let encoded = values.map(fn(v) { @utf8.encode(v) })
   if native_appender_append_list_varchar(self, encoded, encoded.length()) {
     Ok(())
   } else {
@@ -1720,8 +1722,8 @@ pub fn Appender::append_struct(
   self : Appender,
   value : Struct,
 ) -> Result[Unit, DuckDBError] {
-  let encoded_names = value.fields.map(fn(f) { @encoding/utf8.encode(f) })
-  let encoded_values = value.values.map(fn(v) { @encoding/utf8.encode(v) })
+  let encoded_names = value.fields.map(fn(f) { @utf8.encode(f) })
+  let encoded_values = value.values.map(fn(v) { @utf8.encode(v) })
   if native_appender_append_struct_varchar(
       self,
       encoded_names,
@@ -1740,8 +1742,8 @@ pub fn Appender::append_map(
   self : Appender,
   map : Map,
 ) -> Result[Unit, DuckDBError] {
-  let encoded_keys = map.keys.map(fn(k) { @encoding/utf8.encode(k) })
-  let encoded_values = map.values.map(fn(v) { @encoding/utf8.encode(v) })
+  let encoded_keys = map.keys.map(fn(k) { @utf8.encode(k) })
+  let encoded_values = map.values.map(fn(v) { @utf8.encode(v) })
   if native_appender_append_map_varchar_varchar(
       self,
       encoded_keys,
@@ -1767,27 +1769,27 @@ pub fn Appender::append_list_varchar_value(
 ) -> Result[Unit, DuckDBError] {
   // Build a list literal and rely on DuckDB's cast from VARCHAR to LIST.
   fn escape_list_item(s : String) -> String {
-    let sb = StringBuilder::new()
+    let sb = StringBuilder()
     for c in s {
       if c == '\'' {
-        sb..write_char('\'')..write_char('\'')
+        let _ = sb..write_char('\'')..write_char('\'')
       } else {
-        sb..write_char(c)
+        let _ = sb..write_char(c)
       }
     }
     sb.to_string()
   }
 
-  let sb = StringBuilder::new()
-  sb..write_char('[')
+  let sb = StringBuilder()
+  let _ = sb..write_char('[')
   for i, v in values {
     if i > 0 {
-      sb..write_char(',')..write_char(' ')
+      let _ = sb..write_char(',')..write_char(' ')
     }
-    sb..write_char('\'')
-    sb..write_view(escape_list_item(v))
-    sb..write_char('\'')
+    let _ = sb..write_char('\'')
+    let _ = sb..write_view(escape_list_item(v))
+    let _ = sb..write_char('\'')
   }
-  sb..write_char(']')
+  let _ = sb..write_char(']')
   self.append_varchar(sb.to_string())
 }

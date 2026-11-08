@@ -4,6 +4,7 @@
 
 ///|
 /// Appender state representation
+#derive(Show)
 pub enum AppenderState {
   NotCreated
   Ready
@@ -11,35 +12,37 @@ pub enum AppenderState {
   Flushed
   Closed
   Error
-} derive(Show)
+}
 
 ///|
 /// Appender command type
+#derive(Show)
 pub enum AppenderCommand {
   Create(String) // table name
   BeginRow
-  AppendInt(Int)
+  AppendInt(Int32)
   AppendDouble(Double)
   AppendString(String)
   AppendBool(Bool)
   EndRow
   Flush
   Close
-} derive(Show)
+}
 
 ///|
 /// Appender model for state machine testing
+#derive(Show)
 pub struct AppenderModel {
   state : AppenderState
-  column_count : Int
-  expected_columns : Int
-  row_count : Int
-  flushed_row_count : Int
-} derive(Show)
+  column_count : Int32
+  expected_columns : Int32
+  row_count : Int32
+  flushed_row_count : Int32
+}
 
 ///|
 /// Initial appender model
-pub fn appender_model_initial(expected_columns : Int) -> AppenderModel {
+pub fn appender_model_initial(expected_columns : Int32) -> AppenderModel {
   AppenderModel::{
     state: AppenderState::NotCreated,
     column_count: 0,
@@ -513,7 +516,7 @@ test "prop_appender_append_beyond_columns_errors" {
 ///|
 /// Property: end row with incomplete columns errors
 test "prop_appender_end_row_incomplete_errors" {
-  let gen = @gen.int_range(1, 10).bind(fn(col_count) {
+  let gen = @gen.int_range(1, 10).flat_map(fn(col_count) {
     @gen.int_range(0, col_count - 1).map(fn(current_count) {
       let model = AppenderModel::{
         state: AppenderState::RowInProgress,
@@ -729,8 +732,8 @@ test "prop_appender_column_count_resets" {
 ///|
 /// Property: appender state is always valid
 test "prop_appender_state_always_valid" {
-  let gen = @gen.int_range(1, 5).bind(fn(col_count) {
-    @gen.int_range(0, 30).bind(fn(len) {
+  let gen = @gen.int_range(1, 5).flat_map(fn(col_count) {
+    @gen.int_range(0, 30).flat_map(fn(len) {
       array_of(
         @gen.one_of([
           @gen.pure(AppenderCommand::Create("test_table")),

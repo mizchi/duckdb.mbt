@@ -5,20 +5,20 @@
 // Helper to run Arrow query synchronously
 
 ///|
-fn run_native_arrow_query(sql : String) -> Result[ArrowResult, String] {
-  let result_ref : Ref[ArrowResult?] = Ref::new(None)
-  let error_ref : Ref[String?] = Ref::new(None)
-  connect(on_ready=fn(conn_result) {
+fn run_native_arrow_query(sql : String) -> Result[@duckdb.ArrowResult, String] {
+  let result_ref : Ref[@duckdb.ArrowResult?] = Ref(None)
+  let error_ref : Ref[String?] = Ref(None)
+  @duckdb.connect(on_ready=fn(conn_result) {
     match conn_result {
       Ok(conn) =>
         conn.query_arrow(sql, on_done=fn(arrow_result) {
           match arrow_result {
             Ok(result) => result_ref.val = Some(result)
-            Err(DuckDBError::Message(message)) =>
+            Err(@duckdb.DuckDBError::Message(message)) =>
               error_ref.val = Some("arrow query failed: \{message}")
           }
         })
-      Err(DuckDBError::Message(message)) =>
+      Err(@duckdb.DuckDBError::Message(message)) =>
         error_ref.val = Some("connect failed: \{message}")
     }
   })

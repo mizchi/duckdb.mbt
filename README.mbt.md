@@ -7,6 +7,8 @@ MoonBit bindings for DuckDB on native and JavaScript targets.
 ## Targets
 
 - **Native**: links against `libduckdb` via the DuckDB C API.
+- Native builds target DuckDB **1.4.x** (CI uses **1.4.4**); the JavaScript
+  Node backend uses `@duckdb/node-api` **2.0** independently.
 - **JavaScript**: compile with the MoonBit JS target and pick a backend at runtime:
   - `JsBackend::Node` uses `@duckdb/node-api`.
   - `JsBackend::Wasm` uses `@duckdb/duckdb-wasm` in the browser.

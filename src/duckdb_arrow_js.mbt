@@ -47,7 +47,7 @@ extern "js" fn js_query_arrow(
   #|}
 
 ///|
-extern "js" fn js_arrow_column_count(result : ArrowResult) -> Int =
+extern "js" fn js_arrow_column_count(result : ArrowResult) -> Int32 =
   #|(result) => {
   #|  if (result && result.kind === "arrow" && result.result) {
   #|    const arrow = result.result;
@@ -62,7 +62,7 @@ extern "js" fn js_arrow_column_count(result : ArrowResult) -> Int =
   #|}
 
 ///|
-extern "js" fn js_arrow_row_count(result : ArrowResult) -> Int =
+extern "js" fn js_arrow_row_count(result : ArrowResult) -> Int32 =
   #|(result) => {
   #|  if (result && result.kind === "arrow" && result.result) {
   #|    const arrow = result.result;
@@ -113,7 +113,7 @@ extern "js" fn js_arrow_get_schema(result : ArrowResult) -> String =
 ///|
 extern "js" fn js_arrow_get_column_int32(
   result : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> String =
   #|(result, col) => {
   #|  if (!result?.result) return "[]";
@@ -126,7 +126,7 @@ extern "js" fn js_arrow_get_column_int32(
 ///|
 extern "js" fn js_arrow_get_column_int64(
   result : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> String =
   #|(result, col) => {
   #|  if (!result?.result) return "[]";
@@ -141,7 +141,7 @@ extern "js" fn js_arrow_get_column_int64(
 ///|
 extern "js" fn js_arrow_get_column_double(
   result : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> String =
   #|(result, col) => {
   #|  if (!result?.result) return "[]";
@@ -154,7 +154,7 @@ extern "js" fn js_arrow_get_column_double(
 ///|
 extern "js" fn js_arrow_get_column_string(
   result : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> String =
   #|(result, col) => {
   #|  if (!result?.result) return "[]";
@@ -167,7 +167,7 @@ extern "js" fn js_arrow_get_column_string(
 ///|
 extern "js" fn js_arrow_get_column_bool(
   result : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> String =
   #|(result, col) => {
   #|  if (!result?.result) return "[]";
@@ -205,12 +205,12 @@ pub fn Connection::query_arrow(
 }
 
 ///|
-pub fn ArrowResult::column_count(self : ArrowResult) -> Int {
+pub fn ArrowResult::column_count(self : ArrowResult) -> Int32 {
   js_arrow_column_count(self)
 }
 
 ///|
-pub fn ArrowResult::row_count(self : ArrowResult) -> Int {
+pub fn ArrowResult::row_count(self : ArrowResult) -> Int32 {
   js_arrow_row_count(self)
 }
 
@@ -253,7 +253,7 @@ fn parse_arrow_schema_json(
               Json::String(t) => t
               _ => "string"
             }
-            fields.push(ArrowField::{ name, nullable, type_id })
+            fields.push(ArrowField::{ name, nullable, type_id, })
           }
           _ => return Err(DuckDBError::Message("invalid field format"))
         }
@@ -262,15 +262,15 @@ fn parse_arrow_schema_json(
       }
       Ok(ArrowSchemaInfo::{ fields, })
     }
-    _ => Ok(ArrowSchemaInfo::{ fields: [] })
+    _ => Ok(ArrowSchemaInfo::{ fields: [], })
   }
 }
 
 ///|
 pub fn ArrowResult::get_column_int32(
   self : ArrowResult,
-  col : Int,
-) -> Array[Int] {
+  col : Int32,
+) -> Array[Int32] {
   let json_str = js_arrow_get_column_int32(self, col)
   parse_json_int_array(json_str)
 }
@@ -278,8 +278,8 @@ pub fn ArrowResult::get_column_int32(
 ///|
 pub fn ArrowResult::get_column_int64(
   self : ArrowResult,
-  col : Int,
-) -> Array[Int] {
+  col : Int32,
+) -> Array[Int32] {
   let json_str = js_arrow_get_column_int64(self, col)
   parse_json_int_array(json_str)
 }
@@ -287,7 +287,7 @@ pub fn ArrowResult::get_column_int64(
 ///|
 pub fn ArrowResult::get_column_double(
   self : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> Array[Double] {
   let json_str = js_arrow_get_column_double(self, col)
   parse_json_double_array(json_str)
@@ -296,7 +296,7 @@ pub fn ArrowResult::get_column_double(
 ///|
 pub fn ArrowResult::get_column_string(
   self : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> Array[String] {
   let json_str = js_arrow_get_column_string(self, col)
   parse_json_string_array(json_str)
@@ -305,7 +305,7 @@ pub fn ArrowResult::get_column_string(
 ///|
 pub fn ArrowResult::get_column_bool(
   self : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> Array[Bool] {
   let json_str = js_arrow_get_column_bool(self, col)
   parse_json_bool_array(json_str)
@@ -318,7 +318,7 @@ pub fn ArrowResult::get_column_bool(
 // Simple string to Int parser
 
 ///|
-fn parse_str_to_int(s : String) -> Int {
+fn parse_str_to_int(s : String) -> Int32 {
   let mut result = 0
   let mut i = 0
   let negative = if s.length() > 0 && s[0] == '-' {
@@ -342,11 +342,11 @@ fn parse_str_to_int(s : String) -> Int {
 }
 
 ///|
-fn parse_json_int_array(json : String) -> Array[Int] {
+fn parse_json_int_array(json : String) -> Array[Int32] {
   let parsed = @json.parse(json) catch { _ => return [] }
   match parsed {
     Json::Array(items) => {
-      let result : Array[Int] = []
+      let result : Array[Int32] = []
       for item in items {
         match item {
           Json::Number(n, ..) => result.push(parse_str_to_int(n.to_string()))

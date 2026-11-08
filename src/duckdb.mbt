@@ -104,7 +104,7 @@ pub enum ColumnType {
   StringLiteral
   IntegerLiteral
   TimeNs
-  Unknown(Int)
+  Unknown(Int32)
 }
 
 ///|
@@ -113,20 +113,20 @@ fn touch_public_types(backend : JsBackend) -> Unit {
   let _ = backend
   let _ = JsBackend::Node
   let _ = JsBackend::Wasm
-  let _ : QueryResult = { columns: [], column_types: [], rows: [], nulls: [] }
-  let _ : DataChunk = { columns: [], rows: [], nulls: [] }
-  let _ : Decimal = { width: 0, scale: 0, lower: 0, upper: 0 }
-  let _ : Interval = { months: 0, days: 0, micros: 0 }
-  let _ : List = { elements: [] }
-  let _ : Struct = { fields: [], values: [] }
-  let _ : Map = { keys: [], values: [] }
+  let _ : QueryResult = { columns: [], column_types: [], rows: [], nulls: [], }
+  let _ : DataChunk = { columns: [], rows: [], nulls: [], }
+  let _ : Decimal = { width: 0, scale: 0, lower: 0, upper: 0, }
+  let _ : Interval = { months: 0, days: 0, micros: 0, }
+  let _ : List = { elements: [], }
+  let _ : Struct = { fields: [], values: [], }
+  let _ : Map = { keys: [], values: [], }
   let _ : ColumnType = ColumnType::Unknown(-1)
   let _ = column_type_from_id(0)
   // Typed result API types
-  let _ : Value = Value::Decimal({ width: 0, scale: 0, lower: 0, upper: 0 })
-  let _ : Value = Value::Blob(Bytes::default())
+  let _ : Value = Value::Decimal({ width: 0, scale: 0, lower: 0, upper: 0, })
+  let _ : Value = Value::Blob(Default::default())
   let _ : Value = Value::Null
-  let _ : TypedQueryResult = { columns: [], data: [] }
+  let _ : TypedQueryResult = { columns: [], data: [], }
 }
 
 // ============================================================================
@@ -137,18 +137,18 @@ fn touch_public_types(backend : JsBackend) -> Unit {
 /// Fixed-point decimal type for financial calculations.
 /// Uses 128-bit integer representation (lower/upper parts).
 pub struct Decimal {
-  width : Int // Total number of digits
-  scale : Int // Digits after decimal point
-  lower : Int // Lower 64 bits of the 128-bit value
-  upper : Int // Upper 64 bits (sign extension for negative values)
+  width : Int32 // Total number of digits
+  scale : Int32 // Digits after decimal point
+  lower : Int32 // Lower 64 bits of the 128-bit value
+  upper : Int32 // Upper 64 bits (sign extension for negative values)
 }
 
 ///|
 /// Date/time interval type.
 /// Represents a span of time in months, days, and microseconds.
 pub struct Interval {
-  months : Int // Months
-  days : Int // Days
+  months : Int32 // Months
+  days : Int32 // Days
   micros : Int64 // Microseconds (Int64 to avoid overflow)
 }
 
@@ -181,11 +181,11 @@ pub struct Map {
 ///|
 /// Typed value representing a single DuckDB cell.
 pub enum Value {
-  Int(Int)
+  Int(Int32)
   Double(Double)
   Bool(Bool)
   String(String)
-  Date(Int) // Days since 1970-01-01
+  Date(Int32) // Days since 1970-01-01
   Timestamp(Int64) // Microseconds since 1970-01-01
   Decimal(Decimal)
   Blob(Bytes)
@@ -201,17 +201,21 @@ pub struct TypedQueryResult {
 }
 
 ///|
-pub fn QueryResult::row_count(self : QueryResult) -> Int {
+pub fn QueryResult::row_count(self : QueryResult) -> Int32 {
   self.rows.length()
 }
 
 ///|
-pub fn QueryResult::column_count(self : QueryResult) -> Int {
+pub fn QueryResult::column_count(self : QueryResult) -> Int32 {
   self.columns.length()
 }
 
 ///|
-pub fn QueryResult::cell(self : QueryResult, row : Int, col : Int) -> String? {
+pub fn QueryResult::cell(
+  self : QueryResult,
+  row : Int32,
+  col : Int32,
+) -> String? {
   if self.nulls[row][col] {
     None
   } else {
@@ -220,17 +224,17 @@ pub fn QueryResult::cell(self : QueryResult, row : Int, col : Int) -> String? {
 }
 
 ///|
-pub fn DataChunk::row_count(self : DataChunk) -> Int {
+pub fn DataChunk::row_count(self : DataChunk) -> Int32 {
   self.rows.length()
 }
 
 ///|
-pub fn DataChunk::column_count(self : DataChunk) -> Int {
+pub fn DataChunk::column_count(self : DataChunk) -> Int32 {
   self.columns.length()
 }
 
 ///|
-pub fn DataChunk::cell(self : DataChunk, row : Int, col : Int) -> String? {
+pub fn DataChunk::cell(self : DataChunk, row : Int32, col : Int32) -> String? {
   if self.nulls[row][col] {
     None
   } else {
@@ -244,7 +248,7 @@ pub fn DataChunk::cell(self : DataChunk, row : Int, col : Int) -> String? {
 
 ///|
 fn quack_sql_string(value : String) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   ignore(sb.write_char('\''))
   for c in value {
     if c == '\'' {
@@ -290,7 +294,7 @@ fn quack_query_sql(
   token : String,
   disable_ssl : Bool,
 ) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   ignore(
     sb
     ..write_view("FROM quack_query(")
@@ -317,7 +321,7 @@ fn quack_attach_sql(
 ) -> Result[String, DuckDBError] {
   match quack_identifier(db_alias) {
     Ok(alias_sql) => {
-      let sb = StringBuilder::new()
+      let sb = StringBuilder()
       ignore(
         sb
         ..write_view("ATTACH ")
@@ -341,7 +345,7 @@ fn quack_attach_sql(
 
 ///|
 fn quack_secret_sql(token : String, scope : String) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   ignore(
     sb
     ..write_view("CREATE SECRET (TYPE quack, TOKEN ")
@@ -360,7 +364,7 @@ fn quack_serve_sql(
   token : String,
   allow_other_hostname : Bool,
 ) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   ignore(sb..write_view("CALL quack_serve(").write_view(quack_sql_string(uri)))
   if token != "" {
     ignore(sb..write_view(", token => ").write_view(quack_sql_string(token)))
@@ -374,7 +378,7 @@ fn quack_serve_sql(
 
 ///|
 fn quack_stop_sql(uri : String) -> String {
-  let sb = StringBuilder::new()
+  let sb = StringBuilder()
   ignore(sb..write_view("CALL quack_stop(").write_view(quack_sql_string(uri)))
   ignore(sb.write_char(')'))
   sb.to_string()
@@ -418,8 +422,8 @@ pub fn Connection::load_quack(
 pub fn Connection::start_quack_server(
   self : Connection,
   uri : String,
-  token? : String = "",
-  allow_other_hostname? : Bool = false,
+  token~ : String = "",
+  allow_other_hostname~ : Bool = false,
   on_done~ : (Result[QueryResult, DuckDBError]) -> Unit,
 ) -> Unit {
   self.query(quack_serve_sql(uri, token, allow_other_hostname), on_done~)
@@ -443,8 +447,8 @@ pub fn Connection::quack_query(
   self : Connection,
   uri : String,
   sql : String,
-  token? : String = "",
-  disable_ssl? : Bool = false,
+  token~ : String = "",
+  disable_ssl~ : Bool = false,
   on_done~ : (Result[QueryResult, DuckDBError]) -> Unit,
 ) -> Unit {
   self.query(quack_query_sql(uri, sql, token, disable_ssl), on_done~)
@@ -455,7 +459,7 @@ pub fn Connection::quack_query(
 pub fn Connection::create_quack_secret(
   self : Connection,
   token : String,
-  scope? : String = "",
+  scope~ : String = "",
   on_done~ : (Result[Unit, DuckDBError]) -> Unit,
 ) -> Unit {
   self.query(quack_secret_sql(token, scope), on_done=fn(result) {
@@ -469,8 +473,8 @@ pub fn Connection::attach_quack(
   self : Connection,
   uri : String,
   db_alias : String,
-  token? : String = "",
-  disable_ssl? : Bool = false,
+  token~ : String = "",
+  disable_ssl~ : Bool = false,
   on_done~ : (Result[Unit, DuckDBError]) -> Unit,
 ) -> Unit {
   match quack_attach_sql(uri, db_alias, token, disable_ssl) {
@@ -489,8 +493,8 @@ pub fn Connection::attach_quack(
 /// Returns the Value directly without requiring to_typed() conversion.
 pub fn QueryResult::get_value(
   self : QueryResult,
-  row : Int,
-  col : Int,
+  row : Int32,
+  col : Int32,
 ) -> Value? {
   if row < 0 ||
     row >= self.rows.length() ||
@@ -512,7 +516,11 @@ pub fn QueryResult::get_value(
 ///|
 /// Get the integer value at the specified row and column.
 /// Returns None if the value is null or not an integer.
-pub fn QueryResult::get_int(self : QueryResult, row : Int, col : Int) -> Int? {
+pub fn QueryResult::get_int(
+  self : QueryResult,
+  row : Int32,
+  col : Int32,
+) -> Int32? {
   match self.get_value(row, col) {
     Some(Int(n)) => Some(n)
     _ => None
@@ -524,8 +532,8 @@ pub fn QueryResult::get_int(self : QueryResult, row : Int, col : Int) -> Int? {
 /// Returns None if the value is null or not a double.
 pub fn QueryResult::get_double(
   self : QueryResult,
-  row : Int,
-  col : Int,
+  row : Int32,
+  col : Int32,
 ) -> Double? {
   match self.get_value(row, col) {
     Some(Double(d)) => Some(d)
@@ -536,7 +544,11 @@ pub fn QueryResult::get_double(
 ///|
 /// Get the boolean value at the specified row and column.
 /// Returns None if the value is null or not a boolean.
-pub fn QueryResult::get_bool(self : QueryResult, row : Int, col : Int) -> Bool? {
+pub fn QueryResult::get_bool(
+  self : QueryResult,
+  row : Int32,
+  col : Int32,
+) -> Bool? {
   match self.get_value(row, col) {
     Some(Bool(b)) => Some(b)
     _ => None
@@ -548,8 +560,8 @@ pub fn QueryResult::get_bool(self : QueryResult, row : Int, col : Int) -> Bool? 
 /// Returns None if the value is null.
 pub fn QueryResult::get_string(
   self : QueryResult,
-  row : Int,
-  col : Int,
+  row : Int32,
+  col : Int32,
 ) -> String? {
   match self.get_value(row, col) {
     Some(String(s)) => Some(s)
@@ -562,7 +574,11 @@ pub fn QueryResult::get_string(
 ///|
 /// Get the date value at the specified row and column.
 /// Returns None if the value is null or not a date.
-pub fn QueryResult::get_date(self : QueryResult, row : Int, col : Int) -> Int? {
+pub fn QueryResult::get_date(
+  self : QueryResult,
+  row : Int32,
+  col : Int32,
+) -> Int32? {
   match self.get_value(row, col) {
     Some(Date(d)) => Some(d)
     _ => None
@@ -574,8 +590,8 @@ pub fn QueryResult::get_date(self : QueryResult, row : Int, col : Int) -> Int? {
 /// Returns None if the value is null or not a timestamp.
 pub fn QueryResult::get_timestamp(
   self : QueryResult,
-  row : Int,
-  col : Int,
+  row : Int32,
+  col : Int32,
 ) -> Int64? {
   match self.get_value(row, col) {
     Some(Timestamp(t)) => Some(t)
@@ -588,8 +604,8 @@ pub fn QueryResult::get_timestamp(
 /// Returns None if the value is null or not a decimal.
 pub fn QueryResult::get_decimal(
   self : QueryResult,
-  row : Int,
-  col : Int,
+  row : Int32,
+  col : Int32,
 ) -> Decimal? {
   match self.get_value(row, col) {
     Some(Decimal(d)) => Some(d)
@@ -602,8 +618,8 @@ pub fn QueryResult::get_decimal(
 /// Returns None if the value is null or not a blob.
 pub fn QueryResult::get_blob(
   self : QueryResult,
-  row : Int,
-  col : Int,
+  row : Int32,
+  col : Int32,
 ) -> Bytes? {
   match self.get_value(row, col) {
     Some(Blob(b)) => Some(b)

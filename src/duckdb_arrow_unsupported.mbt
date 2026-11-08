@@ -34,13 +34,13 @@ pub fn Connection::query_arrow(
 }
 
 ///|
-pub fn ArrowResult::column_count(self : ArrowResult) -> Int {
+pub fn ArrowResult::column_count(self : ArrowResult) -> Int32 {
   let _ = self
   0
 }
 
 ///|
-pub fn ArrowResult::row_count(self : ArrowResult) -> Int {
+pub fn ArrowResult::row_count(self : ArrowResult) -> Int32 {
   let _ = self
   0
 }
@@ -51,7 +51,7 @@ pub fn ArrowResult::get_schema(
 ) -> Result[ArrowSchemaInfo, DuckDBError] {
   let _ = self
   let _ = ArrowSchemaInfo::{
-    fields: [ArrowField::{ name: "", nullable: false, type_id: "" }],
+    fields: [ArrowField::{ name: "", nullable: false, type_id: "", }],
   }
   Err(
     DuckDBError::Message("arrow integration is not available for this target"),
@@ -61,8 +61,8 @@ pub fn ArrowResult::get_schema(
 ///|
 pub fn ArrowResult::get_column_int32(
   self : ArrowResult,
-  col : Int,
-) -> Array[Int] {
+  col : Int32,
+) -> Array[Int32] {
   let _ = self
   let _ = col
   []
@@ -71,8 +71,8 @@ pub fn ArrowResult::get_column_int32(
 ///|
 pub fn ArrowResult::get_column_int64(
   self : ArrowResult,
-  col : Int,
-) -> Array[Int] {
+  col : Int32,
+) -> Array[Int32] {
   let _ = self
   let _ = col
   []
@@ -81,7 +81,7 @@ pub fn ArrowResult::get_column_int64(
 ///|
 pub fn ArrowResult::get_column_double(
   self : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> Array[Double] {
   let _ = self
   let _ = col
@@ -91,7 +91,7 @@ pub fn ArrowResult::get_column_double(
 ///|
 pub fn ArrowResult::get_column_string(
   self : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> Array[String] {
   let _ = self
   let _ = col
@@ -101,7 +101,7 @@ pub fn ArrowResult::get_column_string(
 ///|
 pub fn ArrowResult::get_column_bool(
   self : ArrowResult,
-  col : Int,
+  col : Int32,
 ) -> Array[Bool] {
   let _ = self
   let _ = col

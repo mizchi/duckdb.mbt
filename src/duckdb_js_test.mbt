@@ -1,6 +1,9 @@
 ///|
 // Use a child process so async JS APIs can be exercised in sync tests.
-extern "js" fn js_run_query(backend : JsBackend, sql : String) -> String =
+extern "js" fn js_run_query(
+  backend : @duckdb.JsBackend,
+  sql : String,
+) -> String =
   #|(backend, sql) => {
   #|  const { execFileSync } = require("child_process");
   #|  const script = [
@@ -133,7 +136,10 @@ extern "js" fn js_run_query(backend : JsBackend, sql : String) -> String =
   #|}
 
 ///|
-extern "js" fn js_run_stream_count(backend : JsBackend, sql : String) -> String =
+extern "js" fn js_run_stream_count(
+  backend : @duckdb.JsBackend,
+  sql : String,
+) -> String =
   #|(backend, sql) => {
   #|  const { execFileSync } = require("child_process");
   #|  const script = [
@@ -301,10 +307,10 @@ fn decode_bool_matrix(json : Json) -> Result[Array[Array[Bool]], String] {
 }
 
 ///|
-fn decode_int(json : Json) -> Result[Int, String] {
+fn decode_int(json : Json) -> Result[Int32, String] {
   match json {
-    Json::Number(n, ..) => Ok(parse_int(n.to_string()))
-    Json::String(s) => Ok(parse_int(s))
+    Json::Number(n, ..) => Ok(@duckdb.parse_int(n.to_string()))
+    Json::String(s) => Ok(@duckdb.parse_int(s))
     _ => Err("expected int")
   }
 }
@@ -348,7 +354,7 @@ fn decode_query_result(
 ///|
 fn decode_stream_result(
   payload : String,
-) -> Result[(Array[String], Int), String] {
+) -> Result[(Array[String], Int32), String] {
   let json = @json.parse(payload) catch {
     err => return Err("parse failed: \{err.to_string()}")
   }
@@ -379,7 +385,7 @@ fn decode_stream_result(
 
 ///|
 fn run_js_query(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   sql : String,
 ) -> Result[(Array[String], Array[Array[String]], Array[Array[Bool]]), String] {
   let payload = js_run_query(backend, sql)
@@ -392,9 +398,9 @@ fn run_js_query(
 
 ///|
 fn run_js_stream_count(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   sql : String,
-) -> Result[(Array[String], Int), String] {
+) -> Result[(Array[String], Int32), String] {
   let payload = js_run_stream_count(backend, sql)
   if payload is "" {
     Err("no output from js runner")
@@ -405,15 +411,15 @@ fn run_js_stream_count(
 
 ///|
 test "js node fixtures" {
-  let missing_ref : Ref[Bool] = Ref::new(false)
-  for case in fixture_cases {
+  let missing_ref : Ref[Bool] = Ref(false)
+  for case in @duckdb.fixture_cases {
     if missing_ref.val {
       ()
     } else {
-      let result = run_js_query(JsBackend::Node, case.sql)
+      let result = run_js_query(@duckdb.JsBackend::Node, case.sql)
       match result {
         Ok((columns, rows, nulls)) =>
-          expect_fixture_case(case, columns, rows, nulls)
+          @duckdb.expect_fixture_case(case, columns, rows, nulls)
         Err(message) =>
           if message.contains("@duckdb/node-api") {
             missing_ref.val = true
@@ -429,12 +435,12 @@ test "js node fixtures" {
 
 ///|
 test "js wasm fixture" {
-  guard fixture_cases.length() > 0 else { fail("no fixtures defined") }
-  let case = fixture_cases[0]
-  let result = run_js_query(JsBackend::Wasm, case.sql)
+  guard @duckdb.fixture_cases.length() > 0 else { fail("no fixtures defined") }
+  let case = @duckdb.fixture_cases[0]
+  let result = run_js_query(@duckdb.JsBackend::Wasm, case.sql)
   match result {
     Ok((columns, rows, nulls)) =>
-      expect_fixture_case(case, columns, rows, nulls)
+      @duckdb.expect_fixture_case(case, columns, rows, nulls)
     Err(message) =>
       if message.contains("@duckdb/duckdb-wasm") ||
         message.contains("duckdb-wasm requires Worker support") {
@@ -448,13 +454,13 @@ test "js wasm fixture" {
 ///|
 test "js node stream count" {
   let result = run_js_stream_count(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     "SELECT i FROM RANGE(10000) tbl(i)",
   )
   match result {
     Ok((columns, count)) =>
       if columns.length() != 1 || columns[0] != "i" {
-        fail("unexpected columns: \{columns}")
+        fail("unexpected columns: \{@debug.to_string(columns)}")
       } else if count != 10000 {
         fail("expected 10000 rows, got \{count}")
       } else {
@@ -472,13 +478,13 @@ test "js node stream count" {
 ///|
 test "js wasm stream count" {
   let result = run_js_stream_count(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT i FROM RANGE(1000) tbl(i)",
   )
   match result {
     Ok((columns, count)) =>
       if columns.length() != 1 || columns[0] != "i" {
-        fail("unexpected columns: \{columns}")
+        fail("unexpected columns: \{@debug.to_string(columns)}")
       } else if count != 1000 {
         fail("expected 1000 rows, got \{count}")
       } else {
@@ -500,10 +506,10 @@ test "js wasm stream count" {
 
 ///|
 extern "js" fn js_run_prepare_query(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   sql : String,
-  binds : Array[String],
-  bind_types : Array[String],
+  binds : FixedArray[String],
+  bind_types : FixedArray[String],
 ) -> String =
   #|(backend, sql, binds, bind_types) => {
   #|  const { execFileSync } = require("child_process");
@@ -669,10 +675,10 @@ extern "js" fn js_run_prepare_query(
 
 ///|
 extern "js" fn js_run_wrapper_prepare_query(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   sql : String,
-  binds : Array[String],
-  bind_types : Array[String],
+  binds : FixedArray[String],
+  bind_types : FixedArray[String],
 ) -> String =
   #|(backend, sql, binds, bind_types) => {
   #|  const { execFileSync } = require("child_process");
@@ -785,7 +791,7 @@ extern "js" fn js_run_wrapper_prepare_query(
 
 ///|
 fn run_js_prepare_query(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   sql : String,
   binds : Array[(String, String)],
 ) -> Result[(Array[String], Array[Array[String]], Array[Array[Bool]]), String] {
@@ -801,7 +807,12 @@ fn run_js_prepare_query(
   } nobreak {
     ()
   }
-  let payload = js_run_prepare_query(backend, sql, bind_values, bind_types)
+  let payload = js_run_prepare_query(
+    backend,
+    sql,
+    FixedArray::from_array(bind_values[:]),
+    FixedArray::from_array(bind_types[:]),
+  )
   if payload is "" {
     Err("no output from js prepare runner")
   } else {
@@ -811,7 +822,7 @@ fn run_js_prepare_query(
 
 ///|
 fn run_js_wrapper_prepare_query(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   sql : String,
   binds : Array[(String, String)],
 ) -> Result[(Array[String], Array[Array[String]], Array[Array[Bool]]), String] {
@@ -828,7 +839,10 @@ fn run_js_wrapper_prepare_query(
     ()
   }
   let payload = js_run_wrapper_prepare_query(
-    backend, sql, bind_values, bind_types,
+    backend,
+    sql,
+    FixedArray::from_array(bind_values[:]),
+    FixedArray::from_array(bind_types[:]),
   )
   if payload is "" {
     Err("no output from js wrapper prepare runner")
@@ -862,9 +876,11 @@ fn is_wasm_direct_param_unsupported(
 
 ///|
 test "js node prepare bind int" {
-  let result = run_js_prepare_query(JsBackend::Node, "SELECT ? * 2 AS x", [
-    ("21", "int"),
-  ])
+  let result = run_js_prepare_query(
+    @duckdb.JsBackend::Node,
+    "SELECT ? * 2 AS x",
+    [("21", "int")],
+  )
   match result {
     Ok((_, rows, nulls)) =>
       if rows.length() != 1 || rows[0].length() != 1 {
@@ -888,7 +904,7 @@ test "js node prepare bind int" {
 ///|
 test "js node prepare bind varchar" {
   let result = run_js_prepare_query(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     "SELECT CONCAT(?, 'suffix') AS x",
     [("prefix", "varchar")],
   )
@@ -914,9 +930,11 @@ test "js node prepare bind varchar" {
 
 ///|
 test "js node prepare bind null" {
-  let result = run_js_prepare_query(JsBackend::Node, "SELECT ? IS NULL AS x", [
-    ("", "null"),
-  ])
+  let result = run_js_prepare_query(
+    @duckdb.JsBackend::Node,
+    "SELECT ? IS NULL AS x",
+    [("", "null")],
+  )
   match result {
     Ok((_, rows, nulls)) =>
       if rows.length() != 1 || rows[0].length() != 1 {
@@ -939,11 +957,11 @@ test "js node prepare bind null" {
 
 ///|
 test "js node prepare multiple params" {
-  let result = run_js_prepare_query(JsBackend::Node, "SELECT ? + ? + ? AS x", [
-    ("10", "int"),
-    ("20", "int"),
-    ("30", "int"),
-  ])
+  let result = run_js_prepare_query(
+    @duckdb.JsBackend::Node,
+    "SELECT ? + ? + ? AS x",
+    [("10", "int"), ("20", "int"), ("30", "int")],
+  )
   match result {
     Ok((_, rows, nulls)) =>
       if rows.length() != 1 || rows[0].length() != 1 {
@@ -966,9 +984,11 @@ test "js node prepare multiple params" {
 
 ///|
 test "js wasm prepare bind int" {
-  let result = run_js_prepare_query(JsBackend::Wasm, "SELECT ? * 2 AS x", [
-    ("21", "int"),
-  ])
+  let result = run_js_prepare_query(
+    @duckdb.JsBackend::Wasm,
+    "SELECT ? * 2 AS x",
+    [("21", "int")],
+  )
   match result {
     Ok((_, rows, nulls)) =>
       if rows.length() != 1 || rows[0].length() != 1 {
@@ -993,7 +1013,7 @@ test "js wasm prepare bind int" {
 ///|
 test "js wasm prepare bind varchar" {
   let result = run_js_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT CONCAT(?, 'suffix') AS x",
     [("prefix", "varchar")],
   )
@@ -1025,7 +1045,7 @@ test "js wasm prepare bind varchar" {
 ///|
 test "js wrapper node prepare bind int" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     "SELECT ? * 2 AS x",
     [("21", "int")],
   )
@@ -1052,7 +1072,7 @@ test "js wrapper node prepare bind int" {
 ///|
 test "js wrapper node prepare bind varchar" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     "SELECT CONCAT(?, 'suffix') AS x",
     [("prefix", "varchar")],
   )
@@ -1079,7 +1099,7 @@ test "js wrapper node prepare bind varchar" {
 ///|
 test "js wrapper node prepare bind bool" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     "SELECT ?::BOOLEAN AS x",
     [("true", "bool")],
   )
@@ -1106,7 +1126,7 @@ test "js wrapper node prepare bind bool" {
 ///|
 test "js wrapper node prepare bind null" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     "SELECT ? IS NULL AS x",
     [("", "null")],
   )
@@ -1133,7 +1153,7 @@ test "js wrapper node prepare bind null" {
 ///|
 test "js wrapper node prepare multiple params" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     "SELECT ? + ? + ? AS x",
     [("10", "int"), ("20", "int"), ("30", "int")],
   )
@@ -1160,7 +1180,7 @@ test "js wrapper node prepare multiple params" {
 ///|
 test "js wrapper wasm prepare bind int" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT ? * 2 AS x",
     [("21", "int")],
   )
@@ -1188,7 +1208,7 @@ test "js wrapper wasm prepare bind int" {
 ///|
 test "js wrapper wasm prepare bind varchar" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT CONCAT(?, 'suffix') AS x",
     [("prefix", "varchar")],
   )
@@ -1216,7 +1236,7 @@ test "js wrapper wasm prepare bind varchar" {
 ///|
 test "js wrapper wasm prepare bind bool" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT ?::BOOLEAN AS x",
     [("true", "bool")],
   )
@@ -1244,7 +1264,7 @@ test "js wrapper wasm prepare bind bool" {
 ///|
 test "js wrapper wasm prepare bind null" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT ? IS NULL AS x",
     [("", "null")],
   )
@@ -1272,7 +1292,7 @@ test "js wrapper wasm prepare bind null" {
 ///|
 test "js wrapper wasm prepare multiple params" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT ? + ? + ? AS x",
     [("10", "int"), ("20", "int"), ("30", "int")],
   )
@@ -1300,7 +1320,7 @@ test "js wrapper wasm prepare multiple params" {
 ///|
 test "js wrapper wasm prepare bind blob" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT hex(?::BLOB) AS x",
     [("[222,173,190,239]", "blob")],
   )
@@ -1328,7 +1348,7 @@ test "js wrapper wasm prepare bind blob" {
 ///|
 test "js wrapper wasm prepare bind decimal" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT (?::DECIMAL(10,2))::VARCHAR AS x",
     [("{\"width\":10,\"scale\":2,\"value\":12345}", "decimal")],
   )
@@ -1355,7 +1375,7 @@ test "js wrapper wasm prepare bind decimal" {
 ///|
 test "js wrapper wasm prepare bind interval" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT date_part('month', ?::INTERVAL)::INTEGER AS x",
     [("{\"months\":1,\"days\":2,\"micros\":3000000}", "interval")],
   )
@@ -1382,7 +1402,7 @@ test "js wrapper wasm prepare bind interval" {
 ///|
 test "js wrapper wasm prepare bind list varchar" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT array_to_string(?::VARCHAR[], ',') AS x",
     [("[\"a\",\"b\",\"c\"]", "list")],
   )
@@ -1410,7 +1430,7 @@ test "js wrapper wasm prepare bind list varchar" {
 ///|
 test "js wrapper wasm prepare bind struct" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT (?::STRUCT(a VARCHAR, b VARCHAR)).a AS x",
     [("{\"fields\":[\"a\",\"b\"],\"values\":[\"left\",\"right\"]}", "struct")],
   )
@@ -1438,7 +1458,7 @@ test "js wrapper wasm prepare bind struct" {
 ///|
 test "js wrapper wasm prepare bind map" {
   let result = run_js_wrapper_prepare_query(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     "SELECT map_extract_value(?::MAP(VARCHAR, VARCHAR), 'k2') AS x",
     [("{\"keys\":[\"k1\",\"k2\"],\"values\":[\"v1\",\"v2\"]}", "map")],
   )
@@ -1469,10 +1489,11 @@ test "js wrapper wasm prepare bind map" {
 
 ///|
 test "js node prepare bind chain with ? operator" {
-  let result = run_js_prepare_query(JsBackend::Node, "SELECT ? + ? AS x", [
-    ("10", "int"),
-    ("20", "int"),
-  ])
+  let result = run_js_prepare_query(
+    @duckdb.JsBackend::Node,
+    "SELECT ? + ? AS x",
+    [("10", "int"), ("20", "int")],
+  )
   match result {
     Ok((_, rows, nulls)) =>
       if rows.length() != 1 || rows[0].length() != 1 {
@@ -1495,11 +1516,11 @@ test "js node prepare bind chain with ? operator" {
 
 ///|
 test "js wasm prepare multiple params" {
-  let result = run_js_prepare_query(JsBackend::Wasm, "SELECT ? + ? + ? AS x", [
-    ("10", "int"),
-    ("20", "int"),
-    ("30", "int"),
-  ])
+  let result = run_js_prepare_query(
+    @duckdb.JsBackend::Wasm,
+    "SELECT ? + ? + ? AS x",
+    [("10", "int"), ("20", "int"), ("30", "int")],
+  )
   match result {
     Ok((_, rows, nulls)) =>
       if rows.length() != 1 || rows[0].length() != 1 {
@@ -1523,7 +1544,7 @@ test "js wasm prepare multiple params" {
 
 ///|
 test "js wasm prepare with quotes" {
-  let result = run_js_prepare_query(JsBackend::Wasm, "SELECT ? AS x", [
+  let result = run_js_prepare_query(@duckdb.JsBackend::Wasm, "SELECT ? AS x", [
     ("it's a test", "varchar"),
   ])
   match result {
@@ -1550,7 +1571,7 @@ test "js wasm prepare with quotes" {
 ///|
 test "js wasm prepare sql injection safe" {
   let malicious = "'; DROP TABLE users; --"
-  let result = run_js_prepare_query(JsBackend::Wasm, "SELECT ? AS x", [
+  let result = run_js_prepare_query(@duckdb.JsBackend::Wasm, "SELECT ? AS x", [
     (malicious, "varchar"),
   ])
   match result {
@@ -1580,7 +1601,7 @@ test "js wasm prepare sql injection safe" {
 
 ///|
 extern "js" fn js_run_appender_test(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   setup_sql : String,
   table : String,
   operations : String,
@@ -1720,10 +1741,10 @@ extern "js" fn js_run_appender_test(
 
 ///|
 fn run_appender_test(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   setup_sql : String,
   table : String,
-  operations : Array[(String, Int)],
+  operations : Array[(String, Int32)],
 ) -> Result[(Array[String], Array[Array[String]], Array[Array[Bool]]), String] {
   // Convert operations to JSON
   let mut ops_json = "["
@@ -1761,7 +1782,7 @@ test "js node appender basic" {
     ("flush", 0),
   ]
   let result = run_appender_test(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     setup_sql,
     "test_appender",
     operations,
@@ -1808,7 +1829,7 @@ test "js node appender with null" {
     ("flush", 0),
   ]
   let result = run_appender_test(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     setup_sql,
     "test_appender_null",
     operations,
@@ -1836,7 +1857,7 @@ test "js wasm appender not supported" {
   let setup_sql = "CREATE TABLE test_appender (i INTEGER, v VARCHAR)"
   let operations = []
   let result = run_appender_test(
-    JsBackend::Wasm,
+    @duckdb.JsBackend::Wasm,
     setup_sql,
     "test_appender",
     operations,
@@ -1858,7 +1879,7 @@ test "js wasm appender not supported" {
 
 ///|
 extern "js" fn js_run_advanced_bind_test(
-  backend : JsBackend,
+  backend : @duckdb.JsBackend,
   setup_sql : String,
   sql : String,
   bind_type : String,
@@ -1982,7 +2003,7 @@ test "js node bind decimal" {
   let sql = "SELECT value FROM test_decimal WHERE id = ?"
   let bind_value = "{ \"width\": 10, \"scale\": 2, \"value\": 12345 }"
   let payload = js_run_advanced_bind_test(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     setup_sql,
     sql,
     "decimal",
@@ -2006,7 +2027,7 @@ test "js node bind interval" {
   let sql = "SELECT value FROM test_interval WHERE id = ?"
   let bind_value = "{ \"months\": 1, \"days\": 2, \"micros\": 3000000 }"
   let payload = js_run_advanced_bind_test(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     setup_sql,
     sql,
     "interval",
@@ -2030,7 +2051,7 @@ test "js node bind list" {
   let sql = "SELECT values FROM test_list WHERE id = ?"
   let bind_value = "{ \"items\": [\"a\", \"b\", \"c\"] }"
   let payload = js_run_advanced_bind_test(
-    JsBackend::Node,
+    @duckdb.JsBackend::Node,
     setup_sql,
     sql,
     "list",

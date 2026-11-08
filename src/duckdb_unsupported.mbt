@@ -1,8 +1,8 @@
 ///|
 pub fn connect(
   on_ready~ : (Result[Connection, DuckDBError]) -> Unit,
-  path? : String = ":memory:",
-  backend? : JsBackend = JsBackend::Auto,
+  path~ : String = ":memory:",
+  backend~ : JsBackend = JsBackend::Auto,
 ) -> Unit {
   let _ = path
   touch_public_types(backend)
@@ -63,7 +63,7 @@ pub fn ResultStream::columns(self : ResultStream) -> Array[String] {
 }
 
 ///|
-pub fn ResultStream::column_count(self : ResultStream) -> Int {
+pub fn ResultStream::column_count(self : ResultStream) -> Int32 {
   let _ = self
   0
 }
@@ -116,8 +116,8 @@ pub fn Connection::prepare(
 ///|
 pub fn PreparedStatement::bind_int(
   self : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = index
@@ -128,8 +128,8 @@ pub fn PreparedStatement::bind_int(
 ///|
 pub fn PreparedStatement::bind_bigint(
   self : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = index
@@ -140,7 +140,7 @@ pub fn PreparedStatement::bind_bigint(
 ///|
 pub fn PreparedStatement::bind_double(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Double,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -152,7 +152,7 @@ pub fn PreparedStatement::bind_double(
 ///|
 pub fn PreparedStatement::bind_varchar(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : String,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -164,7 +164,7 @@ pub fn PreparedStatement::bind_varchar(
 ///|
 pub fn PreparedStatement::bind_bool(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bool,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -176,7 +176,7 @@ pub fn PreparedStatement::bind_bool(
 ///|
 pub fn PreparedStatement::bind_null(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = index
@@ -280,7 +280,7 @@ pub fn Appender::begin_row(self : Appender) -> Result[Unit, DuckDBError] {
 ///|
 pub fn Appender::append_int(
   self : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = value
@@ -290,7 +290,7 @@ pub fn Appender::append_int(
 ///|
 pub fn Appender::append_bigint(
   self : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = value
@@ -355,8 +355,8 @@ pub fn Appender::flush(self : Appender) -> Result[Unit, DuckDBError] {
 ///|
 pub fn PreparedStatement::bind_date(
   self : PreparedStatement,
-  index : Int,
-  days : Int,
+  index : Int32,
+  days : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = index
@@ -367,7 +367,7 @@ pub fn PreparedStatement::bind_date(
 ///|
 pub fn PreparedStatement::bind_timestamp(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   micros : Int64,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -379,7 +379,7 @@ pub fn PreparedStatement::bind_timestamp(
 ///|
 pub fn Appender::append_date(
   self : Appender,
-  days : Int,
+  days : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = days
@@ -397,12 +397,12 @@ pub fn Appender::append_timestamp(
 }
 
 ///|
-fn _is_leap_year(year : Int) -> Bool {
+fn _is_leap_year(year : Int32) -> Bool {
   year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 }
 
 ///|
-fn days_before_month(month : Int) -> Int {
+fn days_before_month(month : Int32) -> Int32 {
   match month {
     1 => 0
     2 => 31
@@ -421,13 +421,13 @@ fn days_before_month(month : Int) -> Int {
 }
 
 ///|
-fn count_leap_years_before(year : Int) -> Int {
+fn count_leap_years_before(year : Int32) -> Int32 {
   let y = year - 1
   y / 4 - y / 100 + y / 400
 }
 
 ///|
-pub fn date_from_ymd(year : Int, month : Int, day : Int) -> Int {
+pub fn date_from_ymd(year : Int32, month : Int32, day : Int32) -> Int32 {
   let year_delta = year - 1970
   let leap_years = count_leap_years_before(year) - count_leap_years_before(1970)
   let year_days = year_delta * 365 + leap_years
@@ -438,7 +438,7 @@ pub fn date_from_ymd(year : Int, month : Int, day : Int) -> Int {
 }
 
 ///|
-pub fn date_to_ymd(days : Int) -> (Int, Int, Int) {
+pub fn date_to_ymd(days : Int32) -> (Int32, Int32, Int32) {
   let mut remaining_days = days
   let mut year = 1970
   while remaining_days >= 365 {
@@ -472,12 +472,12 @@ pub fn date_to_ymd(days : Int) -> (Int, Int, Int) {
 
 ///|
 pub fn timestamp_from_ymd_hms(
-  year : Int,
-  month : Int,
-  day : Int,
-  hour : Int,
-  minute : Int,
-  second : Int,
+  year : Int32,
+  month : Int32,
+  day : Int32,
+  hour : Int32,
+  minute : Int32,
+  second : Int32,
 ) -> Int64 {
   let date_days = date_from_ymd(year, month, day)
   let date_days_64 = date_days.to_int64()
@@ -490,7 +490,9 @@ pub fn timestamp_from_ymd_hms(
 }
 
 ///|
-pub fn timestamp_to_ymd_hms(micros : Int64) -> (Int, Int, Int, Int, Int, Int) {
+pub fn timestamp_to_ymd_hms(
+  micros : Int64,
+) -> (Int32, Int32, Int32, Int32, Int32, Int32) {
   let total_seconds = micros / 1000000L
   let mut days = total_seconds / 86400L
   let mut seconds_in_day = total_seconds % 86400L
@@ -517,7 +519,7 @@ pub fn timestamp_to_ymd_hms(micros : Int64) -> (Int, Int, Int, Int, Int, Int) {
 ///|
 pub fn PreparedStatement::bind_blob(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bytes,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -541,7 +543,7 @@ pub fn Appender::append_blob(
 // ----------------------------------------------------------------------------
 
 ///|
-fn _int_pow10(exp : Int) -> Int {
+fn _int_pow10(exp : Int32) -> Int32 {
   let mut result = 1
   let mut i = 0
   while i < exp {
@@ -554,7 +556,7 @@ fn _int_pow10(exp : Int) -> Int {
 ///|
 pub fn PreparedStatement::bind_decimal(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Decimal,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -574,11 +576,15 @@ pub fn Appender::append_decimal(
 }
 
 ///|
-pub fn decimal_from_double(value : Double, width : Int, scale : Int) -> Decimal {
+pub fn decimal_from_double(
+  value : Double,
+  width : Int32,
+  scale : Int32,
+) -> Decimal {
   let multiplier = _int_pow10(scale)
   let scaled = (value * Double::from_int(multiplier)).to_int()
   let upper = if scaled >= 0 { 0 } else { -1 }
-  { width, scale, lower: scaled, upper }
+  { width, scale, lower: scaled, upper, }
 }
 
 ///|
@@ -589,9 +595,9 @@ pub fn decimal_to_double(decimal : Decimal) -> Double {
 
 ///|
 pub fn decimal_from_parts(
-  whole : Int,
-  fractional : Int,
-  scale : Int,
+  whole : Int32,
+  fractional : Int32,
+  scale : Int32,
 ) -> Decimal {
   let divisor = _int_pow10(scale)
   let value = if whole < 0 {
@@ -605,16 +611,16 @@ pub fn decimal_from_parts(
     String::length(whole.to_string()) + scale
   }
   let upper = if value >= 0 { 0 } else { -1 }
-  { width: width.max(1), scale, lower: value, upper }
+  { width: width.max(1), scale, lower: value, upper, }
 }
 
 ///|
-pub fn decimal_to_parts(decimal : Decimal) -> (Int, Int) {
+pub fn decimal_to_parts(decimal : Decimal) -> (Int32, Int32) {
   let divisor = _int_pow10(decimal.scale)
   let whole = decimal.lower / divisor
   let remainder = decimal.lower % divisor
   let fractional = if remainder < 0 {
-    divisor - Int::abs(remainder)
+    divisor - Int32::abs(remainder)
   } else {
     remainder
   }
@@ -628,7 +634,7 @@ pub fn decimal_to_parts(decimal : Decimal) -> (Int, Int) {
 ///|
 pub fn PreparedStatement::bind_interval(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Interval,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -649,39 +655,39 @@ pub fn Appender::append_interval(
 
 ///|
 pub fn interval_from_parts(
-  months : Int,
-  days : Int,
+  months : Int32,
+  days : Int32,
   micros : Int64,
 ) -> Interval {
-  { months, days, micros }
+  { months, days, micros, }
 }
 
 ///|
-pub fn interval_from_days(days : Int) -> Interval {
-  { months: 0, days, micros: 0 }
+pub fn interval_from_days(days : Int32) -> Interval {
+  { months: 0, days, micros: 0, }
 }
 
 ///|
-pub fn interval_from_hours(hours : Int) -> Interval {
+pub fn interval_from_hours(hours : Int32) -> Interval {
   let micros = hours.to_int64() * 3600L * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
-pub fn interval_from_minutes(minutes : Int) -> Interval {
+pub fn interval_from_minutes(minutes : Int32) -> Interval {
   let micros = minutes.to_int64() * 60L * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
-pub fn interval_from_seconds(seconds : Int) -> Interval {
+pub fn interval_from_seconds(seconds : Int32) -> Interval {
   let micros = seconds.to_int64() * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
-pub fn interval_from_months(months : Int) -> Interval {
-  { months, days: 0, micros: 0 }
+pub fn interval_from_months(months : Int32) -> Interval {
+  { months, days: 0, micros: 0, }
 }
 
 ///|
@@ -697,7 +703,7 @@ pub fn interval_to_micros(interval : Interval) -> Int64 {
 ///|
 pub fn PreparedStatement::bind_list_varchar(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   values : Array[String],
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -712,12 +718,12 @@ pub fn list_from_strings(elements : Array[String]) -> List {
 }
 
 ///|
-pub fn list_length(list : List) -> Int {
+pub fn list_length(list : List) -> Int32 {
   list.elements.length()
 }
 
 ///|
-pub fn list_get(list : List, index : Int) -> String? {
+pub fn list_get(list : List, index : Int32) -> String? {
   if index >= 0 && index < list.elements.length() {
     Some(list.elements[index])
   } else {
@@ -732,7 +738,7 @@ pub fn list_get(list : List, index : Int) -> String? {
 ///|
 pub fn PreparedStatement::bind_struct(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Struct,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -746,18 +752,18 @@ pub fn struct_from_arrays(
   fields : Array[String],
   values : Array[String],
 ) -> Struct {
-  { fields, values }
+  { fields, values, }
 }
 
 ///|
 pub fn struct_from_pairs(pairs : Array[(String, String)]) -> Struct {
   let fields = pairs.map(fn(p) { p.0 })
   let values = pairs.map(fn(p) { p.1 })
-  { fields, values }
+  { fields, values, }
 }
 
 ///|
-fn array_index_of(arr : Array[String], val : String) -> Int? {
+fn array_index_of(arr : Array[String], val : String) -> Int32? {
   let mut i = 0
   while i < arr.length() {
     if arr[i] == val {
@@ -778,7 +784,7 @@ pub fn struct_get(s : Struct, field_name : String) -> String? {
 }
 
 ///|
-pub fn struct_field_count(s : Struct) -> Int {
+pub fn struct_field_count(s : Struct) -> Int32 {
   s.fields.length()
 }
 
@@ -789,7 +795,7 @@ pub fn struct_field_count(s : Struct) -> Int {
 ///|
 pub fn PreparedStatement::bind_map(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   map : Map,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
@@ -800,14 +806,14 @@ pub fn PreparedStatement::bind_map(
 
 ///|
 pub fn map_from_arrays(keys : Array[String], values : Array[String]) -> Map {
-  { keys, values }
+  { keys, values, }
 }
 
 ///|
 pub fn map_from_pairs(pairs : Array[(String, String)]) -> Map {
   let keys = pairs.map(fn(p) { p.0 })
   let values = pairs.map(fn(p) { p.1 })
-  { keys, values }
+  { keys, values, }
 }
 
 ///|
@@ -820,6 +826,6 @@ pub fn map_get(m : Map, key : String) -> String? {
 }
 
 ///|
-pub fn map_size(m : Map) -> Int {
+pub fn map_size(m : Map) -> Int32 {
   m.keys.length()
 }

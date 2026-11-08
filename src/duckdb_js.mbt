@@ -50,7 +50,12 @@ extern "js" fn js_connect(
 extern "js" fn js_query(
   conn : Connection,
   sql : String,
-  on_ok : (Array[String], Array[Array[String]], Array[Array[Bool]], Array[Int]) -> Unit,
+  on_ok : (
+    FixedArray[String],
+    FixedArray[FixedArray[String]],
+    FixedArray[FixedArray[Bool]],
+    FixedArray[Int32],
+  ) -> Unit,
   on_err : (String) -> Unit,
 ) -> Unit =
   #|(conn, sql, on_ok, on_err) => {
@@ -155,7 +160,7 @@ extern "js" fn js_query(
 ///|
 fn column_types_from_ids(
   columns : Array[String],
-  type_ids : Array[Int],
+  type_ids : Array[Int32],
 ) -> Array[ColumnType] {
   let column_types : Array[ColumnType] = []
   let count = columns.length()
@@ -217,7 +222,7 @@ extern "js" fn js_query_stream(
   #|}
 
 ///|
-extern "js" fn js_stream_columns(stream : ResultStream) -> Array[String] =
+extern "js" fn js_stream_columns(stream : ResultStream) -> FixedArray[String] =
   #|(stream) => {
   #|  if (stream && Array.isArray(stream.columns)) {
   #|    return stream.columns;
@@ -226,7 +231,7 @@ extern "js" fn js_stream_columns(stream : ResultStream) -> Array[String] =
   #|}
 
 ///|
-extern "js" fn js_stream_column_count(stream : ResultStream) -> Int =
+extern "js" fn js_stream_column_count(stream : ResultStream) -> Int32 =
   #|(stream) => {
   #|  if (stream && Array.isArray(stream.columns)) {
   #|    return stream.columns.length;
@@ -237,7 +242,7 @@ extern "js" fn js_stream_column_count(stream : ResultStream) -> Int =
 ///|
 extern "js" fn js_stream_next(
   stream : ResultStream,
-  on_ok : (Array[Array[String]], Array[Array[Bool]]) -> Unit,
+  on_ok : (FixedArray[FixedArray[String]], FixedArray[FixedArray[Bool]]) -> Unit,
   on_err : (String) -> Unit,
 ) -> Unit =
   #|(stream, on_ok, on_err) => {
@@ -407,8 +412,8 @@ extern "js" fn js_close(
 ///|
 pub fn connect(
   on_ready~ : (Result[Connection, DuckDBError]) -> Unit,
-  path? : String = ":memory:",
-  backend? : JsBackend = JsBackend::Auto,
+  path~ : String = ":memory:",
+  backend~ : JsBackend = JsBackend::Auto,
 ) -> Unit {
   touch_public_types(backend)
   js_connect(path, backend, fn(conn) { on_ready(Ok(conn)) }, fn(message) {
@@ -436,8 +441,12 @@ pub fn Connection::query(
     self,
     sql,
     fn(columns, rows, nulls, type_ids) {
+      let columns = Array::from_fixed_array(columns)
+      let rows = js_rows_to_array(rows)
+      let nulls = js_rows_to_array(nulls)
+      let type_ids = Array::from_fixed_array(type_ids)
       let column_types = column_types_from_ids(columns, type_ids)
-      on_done(Ok({ columns, column_types, rows, nulls }))
+      on_done(Ok({ columns, column_types, rows, nulls, }))
     },
     fn(message) { on_done(Err(DuckDBError::Message(message))) },
   )
@@ -456,11 +465,11 @@ pub fn Connection::query_stream(
 
 ///|
 pub fn ResultStream::columns(self : ResultStream) -> Array[String] {
-  js_stream_columns(self)
+  Array::from_fixed_array(js_stream_columns(self))
 }
 
 ///|
-pub fn ResultStream::column_count(self : ResultStream) -> Int {
+pub fn ResultStream::column_count(self : ResultStream) -> Int32 {
   js_stream_column_count(self)
 }
 
@@ -472,10 +481,12 @@ pub fn ResultStream::next(
   js_stream_next(
     self,
     fn(rows, nulls) {
+      let rows = js_rows_to_array(rows)
+      let nulls = js_rows_to_array(nulls)
       if rows.length() == 0 {
         on_done(Ok(None))
       } else {
-        on_done(Ok(Some({ columns: self.columns(), rows, nulls })))
+        on_done(Ok(Some({ columns: self.columns(), rows, nulls, })))
       }
     },
     fn(message) { on_done(Err(DuckDBError::Message(message))) },
@@ -542,8 +553,8 @@ extern "js" fn js_prepare(
 ///|
 extern "js" fn js_bind_int(
   stmt : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, String] =
   #|(stmt, index, value) => {
   #|  if (stmt && stmt.kind === "prepared" && stmt.connection && stmt.connection.kind === "node" && stmt.statement) {
@@ -566,8 +577,8 @@ extern "js" fn js_bind_int(
 ///|
 extern "js" fn js_bind_bigint(
   stmt : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, String] =
   #|(stmt, index, value) => {
   #|  if (stmt && stmt.kind === "prepared" && stmt.connection && stmt.connection.kind === "node" && stmt.statement) {
@@ -589,7 +600,7 @@ extern "js" fn js_bind_bigint(
 ///|
 extern "js" fn js_bind_double(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Double,
 ) -> Result[Unit, String] =
   #|(stmt, index, value) => {
@@ -612,7 +623,7 @@ extern "js" fn js_bind_double(
 ///|
 extern "js" fn js_bind_varchar(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : String,
 ) -> Result[Unit, String] =
   #|(stmt, index, value) => {
@@ -635,7 +646,7 @@ extern "js" fn js_bind_varchar(
 ///|
 extern "js" fn js_bind_bool(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bool,
 ) -> Result[Unit, String] =
   #|(stmt, index, value) => {
@@ -658,7 +669,7 @@ extern "js" fn js_bind_bool(
 ///|
 extern "js" fn js_bind_null(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
 ) -> Result[Unit, String] =
   #|(stmt, index) => {
   #|  if (stmt && stmt.kind === "prepared" && stmt.connection && stmt.connection.kind === "node" && stmt.statement) {
@@ -700,7 +711,7 @@ extern "js" fn js_clear_bindings(
 ///|
 extern "js" fn js_bind_date(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   date_str : String,
 ) -> Result[Unit, String] =
   #|(stmt, index, date_str) => {
@@ -723,7 +734,7 @@ extern "js" fn js_bind_date(
 ///|
 extern "js" fn js_bind_timestamp(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   timestamp_str : String,
 ) -> Result[Unit, String] =
   #|(stmt, index, timestamp_str) => {
@@ -750,7 +761,7 @@ extern "js" fn js_bind_timestamp(
 ///|
 extern "js" fn js_bind_blob(
   stmt : PreparedStatement,
-  index : Int,
+  index : Int32,
   data : Bytes,
 ) -> Result[Unit, String] =
   #|(stmt, index, data) => {
@@ -775,10 +786,10 @@ extern "js" fn js_bind_blob(
 ///|
 extern "js" fn js_bind_decimal(
   stmt : PreparedStatement,
-  index : Int,
-  width : Int,
-  scale : Int,
-  value : Int,
+  index : Int32,
+  width : Int32,
+  scale : Int32,
+  value : Int32,
 ) -> Result[Unit, String] =
   #|(stmt, index, width, scale, value) => {
   #|  if (stmt && stmt.kind === "prepared" && stmt.connection && stmt.connection.kind === "node" && stmt.statement) {
@@ -800,9 +811,9 @@ extern "js" fn js_bind_decimal(
 ///|
 extern "js" fn js_bind_interval(
   stmt : PreparedStatement,
-  index : Int,
-  months : Int,
-  days : Int,
+  index : Int32,
+  months : Int32,
+  days : Int32,
   micros : Int64,
 ) -> Result[Unit, String] =
   #|(stmt, index, months, days, micros) => {
@@ -825,8 +836,8 @@ extern "js" fn js_bind_interval(
 ///|
 extern "js" fn js_bind_list_varchar(
   stmt : PreparedStatement,
-  index : Int,
-  values : Array[String],
+  index : Int32,
+  values : FixedArray[String],
 ) -> Result[Unit, String] =
   #|(stmt, index, values) => {
   #|  if (stmt && stmt.kind === "prepared" && stmt.connection && stmt.connection.kind === "node" && stmt.statement) {
@@ -846,9 +857,9 @@ extern "js" fn js_bind_list_varchar(
 ///|
 extern "js" fn js_bind_struct(
   stmt : PreparedStatement,
-  index : Int,
-  fields : Array[String],
-  values : Array[String],
+  index : Int32,
+  fields : FixedArray[String],
+  values : FixedArray[String],
 ) -> Result[Unit, String] =
   #|(stmt, index, fields, values) => {
   #|  if (stmt && stmt.kind === "prepared" && stmt.connection && stmt.connection.kind === "node" && stmt.statement) {
@@ -869,9 +880,9 @@ extern "js" fn js_bind_struct(
 ///|
 extern "js" fn js_bind_map(
   stmt : PreparedStatement,
-  index : Int,
-  keys : Array[String],
-  values : Array[String],
+  index : Int32,
+  keys : FixedArray[String],
+  values : FixedArray[String],
 ) -> Result[Unit, String] =
   #|(stmt, index, keys, values) => {
   #|  if (stmt && stmt.kind === "prepared" && stmt.connection && stmt.connection.kind === "node" && stmt.statement) {
@@ -941,7 +952,7 @@ extern "js" fn js_appender_begin_row(
 ///|
 extern "js" fn js_appender_append_int(
   appender : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, String] =
   #|(appender, value) => {
   #|  if (appender && appender.kind === "appender" && appender.appender) {
@@ -958,7 +969,7 @@ extern "js" fn js_appender_append_int(
 ///|
 extern "js" fn js_appender_append_bigint(
   appender : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, String] =
   #|(appender, value) => {
   #|  if (appender && appender.kind === "appender" && appender.appender) {
@@ -1063,9 +1074,9 @@ extern "js" fn js_appender_append_blob(
 ///|
 extern "js" fn js_appender_append_decimal(
   appender : Appender,
-  width : Int,
-  scale : Int,
-  value : Int,
+  width : Int32,
+  scale : Int32,
+  value : Int32,
 ) -> Result[Unit, String] =
   #|(appender, width, scale, value) => {
   #|  if (appender && appender.kind === "appender" && appender.appender) {
@@ -1082,8 +1093,8 @@ extern "js" fn js_appender_append_decimal(
 ///|
 extern "js" fn js_appender_append_interval(
   appender : Appender,
-  months : Int,
-  days : Int,
+  months : Int32,
+  days : Int32,
   micros : Int64,
 ) -> Result[Unit, String] =
   #|(appender, months, days, micros) => {
@@ -1153,7 +1164,12 @@ extern "js" fn js_appender_close(
 ///|
 extern "js" fn js_execute_prepared(
   stmt : PreparedStatement,
-  on_ok : (Array[String], Array[Array[String]], Array[Array[Bool]], Array[Int]) -> Unit,
+  on_ok : (
+    FixedArray[String],
+    FixedArray[FixedArray[String]],
+    FixedArray[FixedArray[Bool]],
+    FixedArray[Int32],
+  ) -> Unit,
   on_err : (String) -> Unit,
 ) -> Unit =
   #|(stmt, on_ok, on_err) => {
@@ -1460,8 +1476,8 @@ pub fn Connection::prepare(
 ///|
 pub fn PreparedStatement::bind_int(
   self : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_int(self, index, value) {
     Ok(_) => Ok(())
@@ -1472,8 +1488,8 @@ pub fn PreparedStatement::bind_int(
 ///|
 pub fn PreparedStatement::bind_bigint(
   self : PreparedStatement,
-  index : Int,
-  value : Int,
+  index : Int32,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_bigint(self, index, value) {
     Ok(_) => Ok(())
@@ -1484,7 +1500,7 @@ pub fn PreparedStatement::bind_bigint(
 ///|
 pub fn PreparedStatement::bind_double(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Double,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_double(self, index, value) {
@@ -1496,7 +1512,7 @@ pub fn PreparedStatement::bind_double(
 ///|
 pub fn PreparedStatement::bind_varchar(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : String,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_varchar(self, index, value) {
@@ -1508,7 +1524,7 @@ pub fn PreparedStatement::bind_varchar(
 ///|
 pub fn PreparedStatement::bind_bool(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bool,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_bool(self, index, value) {
@@ -1520,7 +1536,7 @@ pub fn PreparedStatement::bind_bool(
 ///|
 pub fn PreparedStatement::bind_null(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_null(self, index) {
     Ok(_) => Ok(())
@@ -1545,8 +1561,8 @@ pub fn PreparedStatement::clear_bindings(
 ///|
 pub fn PreparedStatement::bind_date(
   self : PreparedStatement,
-  index : Int,
-  days : Int,
+  index : Int32,
+  days : Int32,
 ) -> Result[Unit, DuckDBError] {
   // Convert days to ISO date string for JS
   let (year, month, day) = date_to_ymd(days)
@@ -1560,7 +1576,7 @@ pub fn PreparedStatement::bind_date(
 ///|
 pub fn PreparedStatement::bind_timestamp(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   micros : Int64,
 ) -> Result[Unit, DuckDBError] {
   // Convert microseconds to ISO timestamp string for JS
@@ -1577,7 +1593,7 @@ pub fn PreparedStatement::bind_timestamp(
 ///|
 pub fn Appender::append_date(
   self : Appender,
-  days : Int,
+  days : Int32,
 ) -> Result[Unit, DuckDBError] {
   let _ = self
   let _ = days
@@ -1598,7 +1614,7 @@ pub fn Appender::append_timestamp(
 
 ///|
 /// Cumulative days before each month (for non-leap years).
-fn days_before_month(m : Int) -> Int {
+fn days_before_month(m : Int32) -> Int32 {
   match m {
     1 => 0
     2 => 31
@@ -1618,7 +1634,7 @@ fn days_before_month(m : Int) -> Int {
 
 ///|
 /// Count leap years between year 1 and the given year (exclusive).
-fn count_leap_years_before(year : Int) -> Int {
+fn count_leap_years_before(year : Int32) -> Int32 {
   let y = year - 1
   y / 4 - y / 100 + y / 400
 }
@@ -1626,7 +1642,7 @@ fn count_leap_years_before(year : Int) -> Int {
 ///|
 /// Convert year, month, day to days since 1970-01-01 (Unix epoch).
 /// Uses accurate Gregorian calendar calculation with leap year support.
-pub fn date_from_ymd(year : Int, month : Int, day : Int) -> Int {
+pub fn date_from_ymd(year : Int32, month : Int32, day : Int32) -> Int32 {
   // Days from 1970 to the beginning of the given year
   let year_delta = year - 1970
   let leap_years = count_leap_years_before(year) - count_leap_years_before(1970)
@@ -1646,7 +1662,7 @@ pub fn date_from_ymd(year : Int, month : Int, day : Int) -> Int {
 ///|
 /// Convert days since 1970-01-01 to year, month, day.
 /// Uses accurate Gregorian calendar calculation with leap year support.
-pub fn date_to_ymd(total_days : Int) -> (Int, Int, Int) {
+pub fn date_to_ymd(total_days : Int32) -> (Int32, Int32, Int32) {
   // Use a simpler algorithm: count years from 1970
   let mut days = total_days
   let mut year = 1970
@@ -1689,12 +1705,12 @@ pub fn date_to_ymd(total_days : Int) -> (Int, Int, Int) {
 /// Convert date components to a timestamp (microseconds since 1970-01-01).
 /// Note: This is a simplified calculation. For production use, use a proper date library.
 pub fn timestamp_from_ymd_hms(
-  year : Int,
-  month : Int,
-  day : Int,
-  hour : Int,
-  minute : Int,
-  second : Int,
+  year : Int32,
+  month : Int32,
+  day : Int32,
+  hour : Int32,
+  minute : Int32,
+  second : Int32,
 ) -> Int64 {
   let date_days = date_from_ymd(year, month, day)
   let date_days_64 = date_days.to_int64()
@@ -1709,7 +1725,9 @@ pub fn timestamp_from_ymd_hms(
 ///|
 /// Convert timestamp (microseconds since 1970-01-01) to date components.
 /// Note: This is a simplified calculation. For production use, use a proper date library.
-pub fn timestamp_to_ymd_hms(micros : Int64) -> (Int, Int, Int, Int, Int, Int) {
+pub fn timestamp_to_ymd_hms(
+  micros : Int64,
+) -> (Int32, Int32, Int32, Int32, Int32, Int32) {
   let total_seconds = micros / 1000000L
   let days = (total_seconds / 86400L).to_int()
   let seconds_in_day = (total_seconds % 86400L).to_int()
@@ -1729,8 +1747,12 @@ pub fn PreparedStatement::execute(
   js_execute_prepared(
     self,
     fn(columns, rows, nulls, type_ids) {
+      let columns = Array::from_fixed_array(columns)
+      let rows = js_rows_to_array(rows)
+      let nulls = js_rows_to_array(nulls)
+      let type_ids = Array::from_fixed_array(type_ids)
       let column_types = column_types_from_ids(columns, type_ids)
-      on_done(Ok({ columns, column_types, rows, nulls }))
+      on_done(Ok({ columns, column_types, rows, nulls, }))
     },
     fn(message) { on_done(Err(DuckDBError::Message(message))) },
   )
@@ -1858,8 +1880,8 @@ pub fn Config::set(
 pub fn connect_with_config(
   on_ready~ : (Result[Connection, DuckDBError]) -> Unit,
   config : Config?,
-  path? : String = ":memory:",
-  backend? : JsBackend = JsBackend::Auto,
+  path~ : String = ":memory:",
+  backend~ : JsBackend = JsBackend::Auto,
 ) -> Unit {
   touch_public_types(backend)
   match config {
@@ -1908,7 +1930,7 @@ pub fn Appender::begin_row(self : Appender) -> Result[Unit, DuckDBError] {
 ///|
 pub fn Appender::append_int(
   self : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   match js_appender_append_int(self, value) {
     Ok(_) => Ok(())
@@ -1919,7 +1941,7 @@ pub fn Appender::append_int(
 ///|
 pub fn Appender::append_bigint(
   self : Appender,
-  value : Int,
+  value : Int32,
 ) -> Result[Unit, DuckDBError] {
   match js_appender_append_bigint(self, value) {
     Ok(_) => Ok(())
@@ -2005,7 +2027,7 @@ pub fn Appender::close(
 ///|
 pub fn PreparedStatement::bind_blob(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Bytes,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_blob(self, index, value) {
@@ -2032,7 +2054,7 @@ pub fn Appender::append_blob(
 ///|
 pub fn PreparedStatement::bind_decimal(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Decimal,
 ) -> Result[Unit, DuckDBError] {
   // For JS Node backend, convert to BigInt from lower/upper
@@ -2084,11 +2106,15 @@ pub fn Appender::append_decimal(
 }
 
 ///|
-pub fn decimal_from_double(value : Double, width : Int, scale : Int) -> Decimal {
+pub fn decimal_from_double(
+  value : Double,
+  width : Int32,
+  scale : Int32,
+) -> Decimal {
   let multiplier = int_pow10(scale).to_int()
   let scaled = (value * Double::from_int(multiplier)).to_int()
   let upper = if scaled >= 0 { 0 } else { -1 }
-  { width, scale, lower: scaled, upper }
+  { width, scale, lower: scaled, upper, }
 }
 
 ///|
@@ -2099,9 +2125,9 @@ pub fn decimal_to_double(decimal : Decimal) -> Double {
 
 ///|
 pub fn decimal_from_parts(
-  whole : Int,
-  fractional : Int,
-  scale : Int,
+  whole : Int32,
+  fractional : Int32,
+  scale : Int32,
 ) -> Decimal {
   let divisor = int_pow10(scale).to_int()
   let value = if whole < 0 {
@@ -2115,16 +2141,16 @@ pub fn decimal_from_parts(
     String::length(whole.to_string()) + scale
   }
   let upper = if value >= 0 { 0 } else { -1 }
-  { width: width.max(1), scale, lower: value, upper }
+  { width: width.max(1), scale, lower: value, upper, }
 }
 
 ///|
-pub fn decimal_to_parts(decimal : Decimal) -> (Int, Int) {
+pub fn decimal_to_parts(decimal : Decimal) -> (Int32, Int32) {
   let divisor = int_pow10(decimal.scale).to_int()
   let whole = decimal.lower / divisor
   let remainder = decimal.lower % divisor
   let fractional = if remainder < 0 {
-    divisor - Int::abs(remainder)
+    divisor - Int32::abs(remainder)
   } else {
     remainder
   }
@@ -2134,12 +2160,12 @@ pub fn decimal_to_parts(decimal : Decimal) -> (Int, Int) {
 ///|
 /// Create a decimal from 128-bit parts.
 pub fn decimal_from_hugeint(
-  lower : Int,
-  upper : Int,
-  width : Int,
-  scale : Int,
+  lower : Int32,
+  upper : Int32,
+  width : Int32,
+  scale : Int32,
 ) -> Decimal {
-  { width, scale, lower, upper }
+  { width, scale, lower, upper, }
 }
 
 // ----------------------------------------------------------------------------
@@ -2149,7 +2175,7 @@ pub fn decimal_from_hugeint(
 ///|
 pub fn PreparedStatement::bind_interval(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Interval,
 ) -> Result[Unit, DuckDBError] {
   match js_bind_interval(self, index, value.months, value.days, value.micros) {
@@ -2172,39 +2198,39 @@ pub fn Appender::append_interval(
 
 ///|
 pub fn interval_from_parts(
-  months : Int,
-  days : Int,
+  months : Int32,
+  days : Int32,
   micros : Int64,
 ) -> Interval {
-  { months, days, micros }
+  { months, days, micros, }
 }
 
 ///|
-pub fn interval_from_days(days : Int) -> Interval {
-  { months: 0, days, micros: 0 }
+pub fn interval_from_days(days : Int32) -> Interval {
+  { months: 0, days, micros: 0, }
 }
 
 ///|
-pub fn interval_from_hours(hours : Int) -> Interval {
+pub fn interval_from_hours(hours : Int32) -> Interval {
   let micros = hours.to_int64() * 3600L * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
-pub fn interval_from_minutes(minutes : Int) -> Interval {
+pub fn interval_from_minutes(minutes : Int32) -> Interval {
   let micros = minutes.to_int64() * 60L * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
-pub fn interval_from_seconds(seconds : Int) -> Interval {
+pub fn interval_from_seconds(seconds : Int32) -> Interval {
   let micros = seconds.to_int64() * 1000000L
-  { months: 0, days: 0, micros }
+  { months: 0, days: 0, micros, }
 }
 
 ///|
-pub fn interval_from_months(months : Int) -> Interval {
-  { months, days: 0, micros: 0 }
+pub fn interval_from_months(months : Int32) -> Interval {
+  { months, days: 0, micros: 0, }
 }
 
 ///|
@@ -2220,10 +2246,10 @@ pub fn interval_to_micros(interval : Interval) -> Int64 {
 ///|
 pub fn PreparedStatement::bind_list_varchar(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   values : Array[String],
 ) -> Result[Unit, DuckDBError] {
-  match js_bind_list_varchar(self, index, values) {
+  match js_bind_list_varchar(self, index, FixedArray::from_array(values[:])) {
     Ok(_) => Ok(())
     Err(e) => Err(DuckDBError::Message(e))
   }
@@ -2235,12 +2261,12 @@ pub fn list_from_strings(elements : Array[String]) -> List {
 }
 
 ///|
-pub fn list_length(list : List) -> Int {
+pub fn list_length(list : List) -> Int32 {
   list.elements.length()
 }
 
 ///|
-pub fn list_get(list : List, index : Int) -> String? {
+pub fn list_get(list : List, index : Int32) -> String? {
   if index >= 0 && index < list.elements.length() {
     Some(list.elements[index])
   } else {
@@ -2255,10 +2281,16 @@ pub fn list_get(list : List, index : Int) -> String? {
 ///|
 pub fn PreparedStatement::bind_struct(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   value : Struct,
 ) -> Result[Unit, DuckDBError] {
-  match js_bind_struct(self, index, value.fields, value.values) {
+  match
+    js_bind_struct(
+      self,
+      index,
+      FixedArray::from_array(value.fields[:]),
+      FixedArray::from_array(value.values[:]),
+    ) {
     Ok(_) => Ok(())
     Err(e) => Err(DuckDBError::Message(e))
   }
@@ -2269,20 +2301,20 @@ pub fn struct_from_arrays(
   fields : Array[String],
   values : Array[String],
 ) -> Struct {
-  { fields, values }
+  { fields, values, }
 }
 
 ///|
 pub fn struct_from_pairs(pairs : Array[(String, String)]) -> Struct {
   let fields = pairs.map(fn(p) { p.0 })
   let values = pairs.map(fn(p) { p.1 })
-  { fields, values }
+  { fields, values, }
 }
 
 // Helper function to find index in array
 
 ///|
-fn array_index_of(arr : Array[String], val : String) -> Int? {
+fn array_index_of(arr : Array[String], val : String) -> Int32? {
   let mut i = 0
   while i < arr.length() {
     if arr[i] == val {
@@ -2303,7 +2335,7 @@ pub fn struct_get(s : Struct, field_name : String) -> String? {
 }
 
 ///|
-pub fn struct_field_count(s : Struct) -> Int {
+pub fn struct_field_count(s : Struct) -> Int32 {
   s.fields.length()
 }
 
@@ -2314,10 +2346,16 @@ pub fn struct_field_count(s : Struct) -> Int {
 ///|
 pub fn PreparedStatement::bind_map(
   self : PreparedStatement,
-  index : Int,
+  index : Int32,
   map : Map,
 ) -> Result[Unit, DuckDBError] {
-  match js_bind_map(self, index, map.keys, map.values) {
+  match
+    js_bind_map(
+      self,
+      index,
+      FixedArray::from_array(map.keys[:]),
+      FixedArray::from_array(map.values[:]),
+    ) {
     Ok(_) => Ok(())
     Err(e) => Err(DuckDBError::Message(e))
   }
@@ -2325,14 +2363,14 @@ pub fn PreparedStatement::bind_map(
 
 ///|
 pub fn map_from_arrays(keys : Array[String], values : Array[String]) -> Map {
-  { keys, values }
+  { keys, values, }
 }
 
 ///|
 pub fn map_from_pairs(pairs : Array[(String, String)]) -> Map {
   let keys = pairs.map(fn(p) { p.0 })
   let values = pairs.map(fn(p) { p.1 })
-  { keys, values }
+  { keys, values, }
 }
 
 ///|
@@ -2345,6 +2383,11 @@ pub fn map_get(m : Map, key : String) -> String? {
 }
 
 ///|
-pub fn map_size(m : Map) -> Int {
+pub fn map_size(m : Map) -> Int32 {
   m.keys.length()
+}
+
+///|
+fn[T] js_rows_to_array(rows : FixedArray[FixedArray[T]]) -> Array[Array[T]] {
+  Array::makei(rows.length(), i => Array::from_fixed_array(rows[i]))
 }

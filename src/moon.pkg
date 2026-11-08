@@ -1,9 +1,10 @@
 import {
   "moonbitlang/quickcheck" @pbt,
-  "moonbitlang/quickcheck/gen",
+  "moonbitlang/core/quickcheck" @gen,
   "moonbitlang/core/debug",
   "moonbitlang/core/int",
   "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
 }
 
 options(

@@ -1,26 +1,26 @@
 ///|
-fn run_native_query(sql : String) -> Result[QueryResult, String] {
-  let result_ref : Ref[QueryResult?] = Ref::new(None)
-  let error_ref : Ref[String?] = Ref::new(None)
-  connect(on_ready=fn(result) {
+fn run_native_query(sql : String) -> Result[@duckdb.QueryResult, String] {
+  let result_ref : Ref[@duckdb.QueryResult?] = Ref(None)
+  let error_ref : Ref[String?] = Ref(None)
+  @duckdb.connect(on_ready=fn(result) {
     match result {
       Ok(conn) => {
         conn.query(sql, on_done=fn(query_result) {
           match query_result {
             Ok(result) => result_ref.val = Some(result)
-            Err(DuckDBError::Message(message)) =>
+            Err(@duckdb.DuckDBError::Message(message)) =>
               error_ref.val = Some("query failed: \{message}")
           }
         })
         conn.close(on_done=fn(closed) {
           match closed {
             Ok(_) => ()
-            Err(DuckDBError::Message(message)) =>
+            Err(@duckdb.DuckDBError::Message(message)) =>
               error_ref.val = Some("close failed: \{message}")
           }
         })
       }
-      Err(DuckDBError::Message(message)) =>
+      Err(@duckdb.DuckDBError::Message(message)) =>
         error_ref.val = Some("connect failed: \{message}")
     }
   })
@@ -37,25 +37,25 @@ fn run_native_query(sql : String) -> Result[QueryResult, String] {
 ///|
 fn run_native_stream_count(
   sql : String,
-) -> Result[(Array[String], Int), String] {
-  let columns_ref : Ref[Array[String]?] = Ref::new(None)
-  let count_ref : Ref[Int] = Ref::new(0)
-  let error_ref : Ref[String?] = Ref::new(None)
-  connect(on_ready=fn(result) {
+) -> Result[(Array[String], Int32), String] {
+  let columns_ref : Ref[Array[String]?] = Ref(None)
+  let count_ref : Ref[Int32] = Ref(0)
+  let error_ref : Ref[String?] = Ref(None)
+  @duckdb.connect(on_ready=fn(result) {
     match result {
       Ok(conn) =>
         conn.query_stream(sql, on_done=fn(stream_result) {
           match stream_result {
             Ok(stream) => {
               columns_ref.val = Some(stream.columns())
-              let done_ref : Ref[Bool] = Ref::new(false)
+              let done_ref : Ref[Bool] = Ref(false)
               while !done_ref.val {
                 stream.next(on_done=fn(chunk_result) {
                   match chunk_result {
                     Ok(Some(chunk)) =>
                       count_ref.val = count_ref.val + chunk.row_count()
                     Ok(None) => done_ref.val = true
-                    Err(DuckDBError::Message(message)) => {
+                    Err(@duckdb.DuckDBError::Message(message)) => {
                       error_ref.val = Some("stream failed: \{message}")
                       done_ref.val = true
                     }
@@ -65,11 +65,11 @@ fn run_native_stream_count(
               stream.close(on_done=fn(_) { () })
               conn.close(on_done=fn(_) { () })
             }
-            Err(DuckDBError::Message(message)) =>
+            Err(@duckdb.DuckDBError::Message(message)) =>
               error_ref.val = Some("stream failed: \{message}")
           }
         })
-      Err(DuckDBError::Message(message)) =>
+      Err(@duckdb.DuckDBError::Message(message)) =>
         error_ref.val = Some("connect failed: \{message}")
     }
   })
@@ -84,11 +84,31 @@ fn run_native_stream_count(
 }
 
 ///|
+test "native query keeps untyped NULL columns null" {
+  match
+    run_native_query(
+      "SELECT NULL AS missing, 1 AS present UNION ALL SELECT NULL, 2",
+    ) {
+    Ok(result) => {
+      @debug.debug_inspect(
+        result.nulls,
+        content="[[true, false], [true, false]]",
+      )
+      @debug.debug_inspect(
+        result.rows,
+        content="[[\"\", \"1\"], [\"\", \"2\"]]",
+      )
+    }
+    Err(message) => fail(message)
+  }
+}
+
+///|
 test "native fixtures" {
-  for case in fixture_cases {
+  for case in @duckdb.fixture_cases {
     let result = run_native_query(case.sql)
     match result {
-      Ok(value) => expect_query_result(case, value)
+      Ok(value) => @duckdb.expect_query_result(case, value)
       Err(message) => fail("fixture '\{case.name}' failed: \{message}")
     }
   } nobreak {
@@ -102,7 +122,7 @@ test "native stream large range" {
   match result {
     Ok((columns, count)) =>
       if columns.length() != 1 || columns[0] != "i" {
-        fail("unexpected columns: \{columns}")
+        fail("unexpected columns: \{@debug.to_string(columns)}")
       } else if count != 1000000 {
         fail("expected 1000000 rows, got \{count}")
       } else {
@@ -119,11 +139,11 @@ test "native stream large range" {
 ///|
 fn run_native_prepare_query(
   sql : String,
-  bind_fn : (PreparedStatement) -> Result[Unit, DuckDBError],
-) -> Result[QueryResult, String] {
-  let result_ref : Ref[QueryResult?] = Ref::new(None)
-  let error_ref : Ref[String?] = Ref::new(None)
-  connect(on_ready=fn(result) {
+  bind_fn : (@duckdb.PreparedStatement) -> Result[Unit, @duckdb.DuckDBError],
+) -> Result[@duckdb.QueryResult, String] {
+  let result_ref : Ref[@duckdb.QueryResult?] = Ref(None)
+  let error_ref : Ref[String?] = Ref(None)
+  @duckdb.connect(on_ready=fn(result) {
     match result {
       Ok(conn) =>
         conn.prepare(sql, on_done=fn(prepare_result) {
@@ -134,21 +154,21 @@ fn run_native_prepare_query(
                   stmt.execute(on_done=fn(exec_result) {
                     match exec_result {
                       Ok(query_result) => result_ref.val = Some(query_result)
-                      Err(DuckDBError::Message(message)) =>
+                      Err(@duckdb.DuckDBError::Message(message)) =>
                         error_ref.val = Some("execute failed: \{message}")
                     }
                     stmt.close(on_done=fn(_) { () })
                   })
                   conn.close(on_done=fn(_) { () })
                 }
-                Err(DuckDBError::Message(message)) =>
+                Err(@duckdb.DuckDBError::Message(message)) =>
                   error_ref.val = Some("bind failed: \{message}")
               }
-            Err(DuckDBError::Message(message)) =>
+            Err(@duckdb.DuckDBError::Message(message)) =>
               error_ref.val = Some("prepare failed: \{message}")
           }
         })
-      Err(DuckDBError::Message(message)) =>
+      Err(@duckdb.DuckDBError::Message(message)) =>
         error_ref.val = Some("connect failed: \{message}")
     }
   })
@@ -164,7 +184,7 @@ fn run_native_prepare_query(
 
 ///|
 test "native prepare simple select" {
-  let result = run_native_prepare_query("SELECT 1 AS x", fn(stmt) { Ok(()) })
+  let result = run_native_prepare_query("SELECT 1 AS x", fn(_stmt) { Ok(()) })
   match result {
     Ok(value) =>
       if value.column_count() != 1 {
@@ -310,7 +330,9 @@ test "native prepare bind null" {
 
 ///|
 test "native prepare multiple params" {
-  fn bind_multiple(stmt : PreparedStatement) -> Result[Unit, DuckDBError] {
+  fn bind_multiple(
+    stmt : @duckdb.PreparedStatement,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match stmt.bind_int(1, 10) {
       Ok(_) =>
         match stmt.bind_int(2, 20) {
@@ -339,7 +361,9 @@ test "native prepare multiple params" {
 
 ///|
 test "native prepare multiple rows" {
-  fn bind_three_rows(stmt : PreparedStatement) -> Result[Unit, DuckDBError] {
+  fn bind_three_rows(
+    stmt : @duckdb.PreparedStatement,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match stmt.bind_int(1, 1) {
       Ok(_) =>
         match stmt.bind_int(2, 2) {
@@ -380,7 +404,9 @@ test "native prepare multiple rows" {
 
 ///|
 test "native prepare clear bindings" {
-  fn bind_then_clear(stmt : PreparedStatement) -> Result[Unit, DuckDBError] {
+  fn bind_then_clear(
+    stmt : @duckdb.PreparedStatement,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match stmt.bind_int(1, 42) {
       Ok(_) =>
         match stmt.clear_bindings() {
@@ -409,12 +435,12 @@ test "native prepare clear bindings" {
 ///|
 fn run_native_appender_test(
   setup_sql : String,
-  append_fn : (Appender) -> Result[Unit, DuckDBError],
+  append_fn : (@duckdb.Appender) -> Result[Unit, @duckdb.DuckDBError],
   verify_sql : String,
-) -> Result[QueryResult, String] {
-  let result_ref : Ref[QueryResult?] = Ref::new(None)
-  let error_ref : Ref[String?] = Ref::new(None)
-  connect(on_ready=fn(result) {
+) -> Result[@duckdb.QueryResult, String] {
+  let result_ref : Ref[@duckdb.QueryResult?] = Ref(None)
+  let error_ref : Ref[String?] = Ref(None)
+  @duckdb.connect(on_ready=fn(result) {
     match result {
       Ok(conn) =>
         // First run setup SQL to create table
@@ -441,26 +467,26 @@ fn run_native_appender_test(
                                     result_ref.val = Some(result)
                                     conn.close(on_done=fn(_) { () })
                                   }
-                                  Err(DuckDBError::Message(msg)) =>
+                                  Err(@duckdb.DuckDBError::Message(msg)) =>
                                     error_ref.val = Some("query failed: \{msg}")
                                 }
                               })
-                            Err(DuckDBError::Message(msg)) =>
+                            Err(@duckdb.DuckDBError::Message(msg)) =>
                               error_ref.val = Some("close failed: \{msg}")
                           }
                         })
-                      Err(DuckDBError::Message(msg)) =>
+                      Err(@duckdb.DuckDBError::Message(msg)) =>
                         error_ref.val = Some("append failed: \{msg}")
                     }
-                  Err(DuckDBError::Message(msg)) =>
+                  Err(@duckdb.DuckDBError::Message(msg)) =>
                     error_ref.val = Some("create_appender failed: \{msg}")
                 }
               })
-            Err(DuckDBError::Message(msg)) =>
+            Err(@duckdb.DuckDBError::Message(msg)) =>
               error_ref.val = Some("setup query failed: \{msg}")
           }
         })
-      Err(DuckDBError::Message(msg)) =>
+      Err(@duckdb.DuckDBError::Message(msg)) =>
         error_ref.val = Some("connect failed: \{msg}")
     }
   })
@@ -476,7 +502,9 @@ fn run_native_appender_test(
 
 ///|
 test "native appender basic int" {
-  fn append_int_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_int_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -524,7 +552,9 @@ test "native appender basic int" {
 
 ///|
 test "native appender varchar" {
-  fn append_varchar_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_varchar_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -563,7 +593,9 @@ test "native appender varchar" {
 
 ///|
 test "native appender double" {
-  fn append_double_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_double_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -602,7 +634,9 @@ test "native appender double" {
 
 ///|
 test "native appender bool" {
-  fn append_bool_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_bool_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -641,7 +675,9 @@ test "native appender bool" {
 
 ///|
 test "native appender null" {
-  fn append_null_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_null_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -675,7 +711,9 @@ test "native appender null" {
 
 ///|
 test "native appender multiple rows" {
-  fn append_two_rows(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_two_rows(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     // Append first row
     match app.begin_row() {
       Ok(_) =>
@@ -761,7 +799,9 @@ test "native appender multiple rows" {
 
 ///|
 test "native appender bigint" {
-  fn append_bigint_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_bigint_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -804,9 +844,11 @@ test "native appender bigint" {
 
 ///|
 test "native prepare bind date" {
-  fn bind_date_param(stmt : PreparedStatement) -> Result[Unit, DuckDBError] {
+  fn bind_date_param(
+    stmt : @duckdb.PreparedStatement,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     // June 3, 2024
-    let date = date_from_ymd(2024, 6, 3)
+    let date = @duckdb.date_from_ymd(2024, 6, 3)
     stmt.bind_date(1, date)
   }
 
@@ -816,7 +858,7 @@ test "native prepare bind date" {
       match value.cell(0, 0) {
         Some(v) => {
           // Check that the result contains expected date string
-          let (year, month, day) = date_to_ymd(date_from_ymd(2024, 6, 3))
+          let _ = @duckdb.date_to_ymd(@duckdb.date_from_ymd(2024, 6, 3))
           let expected_date = "\\{year}-\\{String::pad_left(month.to_string(), 2, '0')}-\\{String::pad_left(day.to_string(), 2, '0')}"
           if v != expected_date {
             // The actual date from DuckDB may be formatted differently
@@ -839,10 +881,10 @@ test "native prepare bind date" {
 ///|
 test "native prepare bind timestamp" {
   fn bind_timestamp_param(
-    stmt : PreparedStatement,
-  ) -> Result[Unit, DuckDBError] {
+    stmt : @duckdb.PreparedStatement,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     // June 3, 2024, 12:34:56
-    let ts = timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
+    let ts = @duckdb.timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
     stmt.bind_timestamp(1, ts)
   }
 
@@ -867,8 +909,10 @@ test "native prepare bind timestamp" {
 
 ///|
 test "native appender append date" {
-  fn append_date_row(app : Appender) -> Result[Unit, DuckDBError] {
-    let date = date_from_ymd(2024, 6, 3)
+  fn append_date_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
+    let date = @duckdb.date_from_ymd(2024, 6, 3)
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -908,8 +952,10 @@ test "native appender append date" {
 
 ///|
 test "native appender append timestamp" {
-  fn append_timestamp_row(app : Appender) -> Result[Unit, DuckDBError] {
-    let ts = timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
+  fn append_timestamp_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
+    let ts = @duckdb.timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
     match app.begin_row() {
       Ok(_) =>
         match app.append_int(1) {
@@ -953,12 +999,12 @@ test "native appender append timestamp" {
 
 ///|
 test "decimal helpers" {
-  let d1 = decimal_from_double(123.456, 10, 3)
-  let (whole, _frac) = decimal_to_parts(d1)
+  let d1 = @duckdb.decimal_from_double(123.456, 10, 3)
+  let (whole, _frac) = @duckdb.decimal_to_parts(d1)
   if whole != 123 {
     fail("expected whole part 123, got \{whole}")
   }
-  let d2 = decimal_to_double(d1)
+  let d2 = @duckdb.decimal_to_double(d1)
   if d2 < 123.0 || d2 > 124.0 {
     fail("expected decimal ~123.456, got \{d2}")
   }
@@ -967,17 +1013,17 @@ test "decimal helpers" {
 
 ///|
 test "interval helpers" {
-  let i1 = interval_from_days(1)
+  let i1 = @duckdb.interval_from_days(1)
   if i1.days != 1 {
     fail("expected 1 day, got \{i1.days}")
   }
-  let i2 = interval_from_seconds(1)
+  let i2 = @duckdb.interval_from_seconds(1)
   // 1 second = 1000000 micros (Int64)
   if i2.micros != 1000000L {
     fail("expected 1000000L micros, got \{i2.micros}")
   }
   // Test interval_to_micros with days
-  let days_micros = interval_to_micros(i1)
+  let days_micros = @duckdb.interval_to_micros(i1)
   if days_micros != 86400000000L {
     fail("expected 86400000000L for 1 day, got \{days_micros}")
   }
@@ -986,11 +1032,11 @@ test "interval helpers" {
 
 ///|
 test "list helpers" {
-  let l = list_from_strings(["a", "b", "c"])
-  if list_length(l) != 3 {
-    fail("expected length 3, got \{list_length(l)}")
+  let l = @duckdb.list_from_strings(["a", "b", "c"])
+  if @duckdb.list_length(l) != 3 {
+    fail("expected length 3, got \{@duckdb.list_length(l)}")
   }
-  match list_get(l, 1) {
+  match @duckdb.list_get(l, 1) {
     Some(v) => if v != "b" { fail("expected 'b', got '\{v}'") }
     None => fail("expected Some value, got None")
   }
@@ -999,11 +1045,11 @@ test "list helpers" {
 
 ///|
 test "struct helpers" {
-  let s = struct_from_arrays(["x", "y"], ["1", "2"])
-  if struct_field_count(s) != 2 {
-    fail("expected 2 fields, got \{struct_field_count(s)}")
+  let s = @duckdb.struct_from_arrays(["x", "y"], ["1", "2"])
+  if @duckdb.struct_field_count(s) != 2 {
+    fail("expected 2 fields, got \{@duckdb.struct_field_count(s)}")
   }
-  match struct_get(s, "x") {
+  match @duckdb.struct_get(s, "x") {
     Some(v) => if v != "1" { fail("expected '1', got '\{v}'") }
     None => fail("expected Some value, got None")
   }
@@ -1012,11 +1058,11 @@ test "struct helpers" {
 
 ///|
 test "map helpers" {
-  let m = map_from_arrays(["k1", "k2"], ["v1", "v2"])
-  if map_size(m) != 2 {
-    fail("expected size 2, got \{map_size(m)}")
+  let m = @duckdb.map_from_arrays(["k1", "k2"], ["v1", "v2"])
+  if @duckdb.map_size(m) != 2 {
+    fail("expected size 2, got \{@duckdb.map_size(m)}")
   }
-  match map_get(m, "k1") {
+  match @duckdb.map_get(m, "k1") {
     Some(v) => if v != "v1" { fail("expected 'v1', got '\{v}'") }
     None => fail("expected Some value, got None")
   }
@@ -1079,7 +1125,7 @@ test "typed result varchar stays string" {
     Ok(query_result) => {
       let typed = query_result.to_typed()
       match typed.get_value(0, 0) {
-        Some(Value::String(s)) =>
+        Some(@duckdb.Value::String(s)) =>
           if s != "00123" {
             fail("expected '00123', got '\{s}'")
           }
@@ -1087,7 +1133,7 @@ test "typed result varchar stays string" {
         None => fail("expected Some value for num_str")
       }
       match typed.get_value(0, 1) {
-        Some(Value::String(s)) =>
+        Some(@duckdb.Value::String(s)) =>
           if s != "2024-06-03" {
             fail("expected '2024-06-03', got '\{s}'")
           }
@@ -1095,7 +1141,7 @@ test "typed result varchar stays string" {
         None => fail("expected Some value for date_str")
       }
       match typed.get_value(0, 2) {
-        Some(Value::String(s)) =>
+        Some(@duckdb.Value::String(s)) =>
           if s != "3.14" {
             fail("expected '3.14', got '\{s}'")
           }
@@ -1146,7 +1192,7 @@ test "typed result date and timestamp" {
       let typed = query_result.to_typed()
       match typed.get_date(0, 0) {
         Some(days) => {
-          let date = date_from_ymd(2024, 6, 3)
+          let date = @duckdb.date_from_ymd(2024, 6, 3)
           if days != date {
             fail("expected date \{date}, got \{days}")
           }
@@ -1155,7 +1201,7 @@ test "typed result date and timestamp" {
       }
       match typed.get_timestamp(0, 1) {
         Some(micros) => {
-          let ts = timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
+          let ts = @duckdb.timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
           let mut diff = micros - ts
           if diff < 0 {
             diff = -diff
@@ -1181,7 +1227,7 @@ test "typed result timestamp fractional seconds" {
       let typed = query_result.to_typed()
       match typed.get_timestamp(0, 0) {
         Some(micros) => {
-          let base = timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
+          let base = @duckdb.timestamp_from_ymd_hms(2024, 6, 3, 12, 34, 56)
           let expected = base + 789123
           if micros != expected {
             fail("expected timestamp \{expected}, got \{micros}")
@@ -1293,12 +1339,12 @@ test "typed result get_value" {
     Ok(query_result) => {
       let typed = query_result.to_typed()
       match typed.get_value(0, 0) {
-        Some(Value::Int(42)) => ()
+        Some(@duckdb.Value::Int(42)) => ()
         Some(_) => fail("expected Value::Int(42), got other value")
         None => fail("expected Some(value), got None")
       }
       match typed.get_value(0, 1) {
-        Some(Value::String(s)) =>
+        Some(@duckdb.Value::String(s)) =>
           if s != "text" {
             fail("expected 'text', got '\{s}'")
           }
@@ -1306,7 +1352,7 @@ test "typed result get_value" {
         None => fail("expected Some(value), got None")
       }
       match typed.get_value(0, 2) {
-        Some(Value::Null) => ()
+        Some(@duckdb.Value::Null) => ()
         Some(_) => fail("expected Value::Null, got other")
         None => fail("expected Some(value), got None")
       }
@@ -1322,7 +1368,7 @@ test "typed result get_value" {
 ///|
 test "native decimal 128-bit helpers" {
   // Test decimal_from_hugeint creates correct 128-bit decimal
-  let dec = decimal_from_hugeint(12345, 0, 10, 2)
+  let dec = @duckdb.decimal_from_hugeint(12345, 0, 10, 2)
   if dec.width != 10 {
     fail("expected width 10, got \{dec.width}")
   } else if dec.scale != 2 {
@@ -1338,7 +1384,7 @@ test "native decimal 128-bit helpers" {
 
 ///|
 test "native decimal from parts" {
-  let dec = decimal_from_parts(123, 45, 2)
+  let dec = @duckdb.decimal_from_parts(123, 45, 2)
   if dec.width != 5 {
     fail("expected width 5, got \{dec.width}")
   } else if dec.scale != 2 {
@@ -1352,8 +1398,8 @@ test "native decimal from parts" {
 
 ///|
 test "native decimal to parts" {
-  let dec = decimal_from_hugeint(12345, 0, 10, 2)
-  let (whole, frac) = decimal_to_parts(dec)
+  let dec = @duckdb.decimal_from_hugeint(12345, 0, 10, 2)
+  let (whole, frac) = @duckdb.decimal_to_parts(dec)
   if whole != 123 {
     fail("expected whole 123, got \{whole}")
   } else if frac != 45 {
@@ -1366,8 +1412,8 @@ test "native decimal to parts" {
 ///|
 test "native decimal negative roundtrip" {
   // Test negative decimal round-trip
-  let d1 = decimal_from_parts(-100, 50, 2)
-  let (w1, f1) = decimal_to_parts(d1)
+  let d1 = @duckdb.decimal_from_parts(-100, 50, 2)
+  let (w1, f1) = @duckdb.decimal_to_parts(d1)
   if w1 != -100 {
     fail("expected whole -100, got \{w1}")
   } else if f1 != 50 {
@@ -1377,8 +1423,8 @@ test "native decimal negative roundtrip" {
   }
 
   // Test another negative value
-  let d2 = decimal_from_parts(-1, 99, 2)
-  let (w2, f2) = decimal_to_parts(d2)
+  let d2 = @duckdb.decimal_from_parts(-1, 99, 2)
+  let (w2, f2) = @duckdb.decimal_to_parts(d2)
   if w2 != -1 {
     fail("expected whole -1, got \{w2}")
   } else if f2 != 99 {
@@ -1390,7 +1436,9 @@ test "native decimal negative roundtrip" {
 
 ///|
 test "native appender list varchar" {
-  fn append_list_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_list_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     // Use append_list_varchar_value to append a list literal string
     match app.begin_row() {
       Ok(_) =>
@@ -1428,7 +1476,9 @@ test "native appender list varchar" {
 
 ///|
 test "native appender struct" {
-  fn append_struct_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_struct_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         // Append struct as JSON string using append_varchar
@@ -1467,7 +1517,9 @@ test "native appender struct" {
 
 ///|
 test "native appender map" {
-  fn append_map_row(app : Appender) -> Result[Unit, DuckDBError] {
+  fn append_map_row(
+    app : @duckdb.Appender,
+  ) -> Result[Unit, @duckdb.DuckDBError] {
     match app.begin_row() {
       Ok(_) =>
         // Append map as JSON string using append_varchar
