@@ -1,6 +1,6 @@
 name = "mizchi/duckdb"
 
-version = "0.6.5"
+version = "0.6.6"
 
 import {
   "moonbitlang/quickcheck@0.15.1",
